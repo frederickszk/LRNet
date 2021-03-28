@@ -102,7 +102,7 @@ Execute the following command:
 python classify.py
 ```
 
-and you can see the prediction results (predicted label and score of the corresponding sample. Noticed the score that "0=real" and "1=fake".)
+and you can see the prediction results (predicted label and score of the corresponding sample. Noticed the score that "0=real" and "1=fake".
 
 
 
