@@ -45,7 +45,7 @@ Perform the classification on extracted landmarks. Including reading and embeddi
 
 `shape_predictor_68_face_landmarks.dat`
 
-DLIB landmarks detector parameters.
+DLIB landmarks detector parameters. **(Need to download MANUALLY.)**
 
 # Requirements
 
