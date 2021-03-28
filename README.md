@@ -1,6 +1,6 @@
 # LRNet
 Landmark Recurrent Network: An efficient and robust framwork for Deepfakes detection
-> The implementation for paper: **Improving the Efficiency and Robustness for Deepfakes Detection Through Precise Geometric Features (CVPR2021)**.
+> The implementation for paper: **Improving the Efficiency and Robustness for Deepfakes Detection through Precise Geometric Features (CVPR2021)**.
 
 
 # Description
@@ -118,5 +118,5 @@ and you can see the prediction results (predicted label and score of the corresp
 # Notice
 
 
-1. This is only a demo to show the whole detection framework, thus several components of our codes need optimization. The landmarks extraction speed and quality may not be optimized. And we are continuing to organize the code. The calibration module will be designed as an api to calibrate the landmarks extracted by any other landmark detectors.
+1. This is only a demo to show the whole detection framework, thus several components of our codes need optimization, and we are continuing to organize the code. The calibration module will be further designed as an API to calibrate the landmarks extracted by any other landmark detectors.
 2. Only TensorFlow is involved in building the network. PyTorch is used to extract patches from an image with bilinear interpolation. However, it's slightly slower in CPU and we consider to reimplement it with Numpy and openCV for easier use.
