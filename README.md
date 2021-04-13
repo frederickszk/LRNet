@@ -59,8 +59,7 @@ DLIB landmarks detector parameters. **(Need to download MANUALLY.)**
 - dlib
     - CPU version is sufficient.
     - We do not include the necessary detector model (~100.7Mb). You may download it at  http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
-- PyTorch > 1.3
-    - CPU version is sufficient.
+
 
 ## For classification
 
@@ -106,17 +105,17 @@ and you can see the prediction results (predicted label and score of the corresp
 
 
 
-# TODO
+# TODO & Update List
 
-- [x] Upload the demo
+- [x] Upload the demo (2021/3/29)
 - [ ] Update the face/landmark detector.
 - [ ] Update the calibration module. 
+  - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14, **LATEST**)
+  - [ ] Optimize the speed.
 - [ ] Optimize the RNN part.
 
 
 
 # Notice
 
-
-1. This is only a demo to show the whole detection framework, thus several components of our codes need optimization, and we are continuing to organize the code. The calibration module will be further designed as an API to calibrate the landmarks extracted by any other landmark detectors.
-2. Only TensorFlow is involved in building the network. PyTorch is used to extract patches from an image with bilinear interpolation. However, it's slightly slower in CPU and we consider to reimplement it with Numpy and openCV for easier use.
+This is only a demo to show the whole detection framework, thus several components of our codes need optimization, and we are continuing to organize the code. The calibration module will be further designed as an API to calibrate the landmarks extracted by any other landmark detectors.

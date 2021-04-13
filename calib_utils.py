@@ -1,146 +1,210 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import cv2 as cv
 import numpy as np
 
+pyramid_source = []
+pyramid_target = []
+patch_source_pyramid = []
+JT_source_pyramid = []
+Hinv_source_pyramid = []
+windows = []
 
-def torch_inverse_batch(deltp):
-    # deltp must be [K,2]
-    assert deltp.dim() == 3 and deltp.size(1) == 2 and deltp.size(2) == 2, 'The deltp format is not right : {}'.format(
-        deltp.size())
-    a, b, c, d = deltp[:, 0, 0], deltp[:, 0, 1], deltp[:, 1, 0], deltp[:, 1, 1]
-    a = a + np.finfo(float).eps
-    d = d + np.finfo(float).eps
-    divide = a * d - b * c + np.finfo(float).eps
-    inverse = torch.stack([d, -b, -c, a], dim=1) / divide.unsqueeze(1)
-    return inverse.view(-1, 2, 2)
+class Window:
+    def __init__(self, center_x, center_y, window_size):
+        self.center_x = center_x
+        self.center_y = center_y
+        self.window_size = window_size
+        # The displacement vectors.
+        # Important for simulating the internal calculation vector: g and d. Also they record the final results.
+        self.Dx = 0
+        self.Dy = 0
+
+        self.map_x = None
+        self.map_y = None
+        self.generate_map()
+
+    def generate_map(self):
+        epsilon = 0.001
+        start_x = self.center_x - self.window_size//2
+        start_y = self.center_y - self.window_size//2
+        # print(start_x, start_y)
+        # When window_size is odd, we must use this form to enforce the size of map to be window_size.
+        crop_x = np.arange(start_x, start_x+self.window_size - epsilon, 1.0).astype(np.float32).reshape(1, self.window_size)
+        self.map_x = np.repeat(crop_x, self.window_size, axis=0)
+        crop_y = np.arange(start_y, start_y + self.window_size - epsilon, 1.0).astype(np.float32).reshape(self.window_size, 1)
+        self.map_y = np.repeat(crop_y, self.window_size, axis=1)
+
+    def pyrDown(self):
+        """
+        When down-sample the original patch, the corresponding point position should be /2.
+        However the maps' coordinate should not be dimply /2, therefore the maps need regenerate.
+        """
+        self.center_x = self.center_x / 2
+        self.center_y = self.center_y / 2
+        self.Dx = self.Dx / 2
+        self.Dy = self.Dy / 2
+        self.generate_map()
+
+    def pyrUp(self):
+        """
+        When calculating the pyramidal LK and moving to the next (bigger) pyramid, the patch size will be doubled.
+        Thus the corresponding point position should be *2.
+
+        Here we should consider the displacement vector (Dx, Dy), to simulate the equation: g_(L-1) = 2*(g_L + d_L)
+        (d_L calculated in this level iteration and g_L is inherited from the former level iteration, both stored in
+        displacement vector)
+        """
+        self.center_x = self.center_x * 2
+        self.center_y = self.center_y * 2
+        self.Dx = self.Dx * 2
+        self.Dy = self.Dy * 2
+        self.generate_map()
+
+    def move(self, delta_x, delta_y):
+        self.Dx += delta_x
+        self.Dy += delta_y
+
+    def crop(self, img):
+        # Notice!!: map_column calculated from x, while map_row calculated from y.
+        #           Which contradict to the matrix index.
+        patch = cv.remap(img, self.map_x + self.Dx,
+                         self.map_y + self.Dy, cv.INTER_LINEAR)
+        return patch
 
 
-def warp_feature_batch(feature, pts_location, patch_size):
-    # feature must be [1,C,H,W] and pts_location must be [Num-Pts, (x,y)]
-    _, C, H, W = list(feature.size())
-    num_pts = pts_location.size(0)
-    assert isinstance(patch_size, int) and feature.size(0) == 1 and pts_location.size(
-        1) == 2, 'The shapes of feature or points are not right : {} vs {}'.format(feature.size(), pts_location.size())
-    assert W > 1 and H > 1, 'To guarantee normalization {}, {}'.format(W, H)
-
-    def normalize(x, L):
-        return -1. + 2. * x / (L - 1)
-
-    crop_box = torch.cat([pts_location - patch_size, pts_location + patch_size], 1).float()
-    crop_box[:, [0, 2]] = normalize(crop_box[:, [0, 2]], W)
-    crop_box[:, [1, 3]] = normalize(crop_box[:, [1, 3]], H)
-
-    # crop_box[:, [0,2]] = int(normalize(crop_box[:, [0,2]], W))
-    # crop_box[:, [1,3]] = int(normalize(crop_box[:, [1,3]], H))
-
-    affine_parameter = [(crop_box[:, 2] - crop_box[:, 0]) / 2, crop_box[:, 0] * 0,
-                        (crop_box[:, 2] + crop_box[:, 0]) / 2,
-                        crop_box[:, 0] * 0, (crop_box[:, 3] - crop_box[:, 1]) / 2,
-                        (crop_box[:, 3] + crop_box[:, 1]) / 2]
-    # affine_parameter = [(crop_box[:,2]-crop_box[:,0])/2, MU.np2variable(torch.zeros(num_pts),feature.is_cuda,False), (crop_box[:,2]+crop_box[:,0])/2,
-    #                    MU.np2variable(torch.zeros(num_pts),feature.is_cuda,False), (crop_box[:,3]-crop_box[:,1])/2, (crop_box[:,3]+crop_box[:,1])/2]
-    theta = torch.stack(affine_parameter, 1).view(num_pts, 2, 3)
-    feature = feature.expand(num_pts, C, H, W)
-    grid_size = torch.Size([num_pts, 1, 2 * patch_size + 1, 2 * patch_size + 1])
-    grid = F.affine_grid(theta, grid_size, align_corners=True)
-    sub_feature = F.grid_sample(feature, grid, align_corners=True)
-    return sub_feature
-
-def Generate_Weight(patch_size, sigma=None):
-    assert isinstance(patch_size, list) or isinstance(patch_size, tuple)
-    assert patch_size[0] > 0 and patch_size[1] > 0, 'the patch size must > 0 rather :{}'.format(patch_size)
-    center = [(patch_size[0] - 1.) / 2, (patch_size[1] - 1.) / 2]
-    maps = np.fromfunction(lambda x, y: (x - center[0]) ** 2 + (y - center[1]) ** 2, (patch_size[0], patch_size[1]),
+def generate_weight(patch_size):
+    """
+    Generate the weight matrix
+    :param patch_size: (Int) The patch_size
+    :return: The weight map (patch_size * patch_size * 1).
+    """
+    center = [patch_size // 2, patch_size // 2]
+    sigma_x = sigma_y = patch_size // 2
+    maps = np.fromfunction(lambda x, y: ((x - center[0])/sigma_x) ** 2 +
+                                        ((y - center[1])/sigma_y) ** 2,
+                           (patch_size, patch_size),
                            dtype=int)
-    if sigma is None: sigma = min(patch_size[0], patch_size[1]) / 2.
-    maps = np.exp(maps / -2.0 / sigma / sigma)
-    maps[0, :] = maps[-1, :] = maps[:, 0] = maps[:, -1] = 0
-    return maps.astype(np.float32)
-
-class SobelConv(nn.Module):
-    def __init__(self, tag, dtype):
-        super(SobelConv, self).__init__()
-        if tag == 'x':
-            Sobel = np.array([[-1. / 8, 0, 1. / 8], [-2. / 8, 0, 2. / 8], [-1. / 8, 0, 1. / 8]])
-        elif tag == 'y':
-            Sobel = np.array([[-1. / 8, -2. / 8, -1. / 8], [0, 0, 0], [1. / 8, 2. / 8, 1. / 8]])
-        else:
-            raise NameError('Do not know this tag for Sobel Kernel : {}'.format(tag))
-        Sobel = torch.from_numpy(Sobel).type(dtype)
-        Sobel = Sobel.view(1, 1, 3, 3)
-        self.register_buffer('weight', Sobel)
-        self.tag = tag
-    def forward(self, input):
-        weight = self.weight.expand(input.size(1), 1, 3, 3).contiguous()
-        return F.conv2d(input, weight, groups=input.size(1), padding=1)
-    def __repr__(self):
-        return ('{name}(tag={tag})'.format(name=self.__class__.__name__, **self.__dict__))
+    return np.expand_dims(np.exp(maps/-2.0), -1)
 
 
-def lk_track(feature_old, feature_new, pts_locations, patch_size, max_step):
-    # feature[old,new] : 4-D tensor [1, C, H, W]
-    # pts_locations is a 2-D tensor [Num-Pts, (Y,X)]
-    if feature_new.dim() == 3:
-        feature_new = feature_new.unsqueeze(0)
-    if feature_old is not None and feature_old.dim() == 3:
-        feature_old = feature_old.unsqueeze(0)
-    assert feature_new.dim() == 4, 'The dimension of feature-new is not right : {}.'.format(feature_new.dim())
-    BB, C, H, W = list(feature_new.size())
-    assert isinstance(patch_size, int), 'The format of lk-parameters are not right : {}'.format(patch_size)
-    num_pts = pts_locations.size(0)
-    device = feature_new.device
-    # feature_T should be a [num_pts, C, patch, patch] tensor
-    feature_T = warp_feature_batch(feature_old, pts_locations, patch_size)
-    assert feature_T.size(2) == patch_size * 2 + 1 and feature_T.size(
-        3) == patch_size * 2 + 1, 'The size of feature-template is not ok : {}'.format(feature_T.size())
+def craft_pyramid(image, level, pyramid_container):
+    pyramid_container.clear()
+    pyramid_container.append(image)
+    for i in range(level - 1):
+        image = cv.pyrDown(image)
+        pyramid_container.append(image)
 
-    weight_map = Generate_Weight([patch_size * 2 + 1, patch_size * 2 + 1])  # [H, W]
-    with torch.no_grad():
-        weight_map = torch.tensor(weight_map).view(1, 1, 1, patch_size * 2 + 1, patch_size * 2 + 1).to(device)
-        sobelconvx = SobelConv('x', feature_new.dtype).to(device)
-        sobelconvy = SobelConv('y', feature_new.dtype).to(device)
 
-    gradiant_x = sobelconvx(feature_T)
-    gradiant_y = sobelconvy(feature_T)
-    J = torch.stack([gradiant_x, gradiant_y], dim=1)
-    weightedJ = J * weight_map
-    """
-      J is 68*2*C*H*W.
-      weight_map = 1*1*C*H*W
-      J*w refer to the element-wise multiply, which using the broadcast machanism.
-    """
+def lk_track(face_source, face_target, landmarks_source, window_size, pyramid_level):
+    # Create the image pyramid for both source and target.
+    craft_pyramid(face_source, pyramid_level, pyramid_source)
+    craft_pyramid(face_target, pyramid_level, pyramid_target)
 
-    H = torch.bmm(weightedJ.view(num_pts, 2, -1), J.view(num_pts, 2, -1).transpose(2, 1))
-    inverseH = torch_inverse_batch(H)
-    for step in range(max_step):
-        feature_I = warp_feature_batch(feature_new, pts_locations, patch_size)
-        r = feature_I - feature_T
-        sigma = torch.bmm(weightedJ.view(num_pts, 2, -1), r.view(num_pts, -1, 1))
-        deltap = torch.bmm(inverseH, sigma).squeeze(-1)
-        pts_locations = pts_locations - deltap
-    return pts_locations
+    # Generate the weight map
+    weight_map = generate_weight(window_size)
+
+    # Create windows for cropping patches.
+    windows.clear()
+    for landmark in landmarks_source:
+        x, y = landmark
+        # windows.append(Window(x, y, patch_size, face_source.shape[0], face_source.shape[0]))
+        windows.append(Window(x, y, window_size))
+
+    # Initialize the patches of both the source.
+    # Notice that here both using the same window, i.e., d = 0.
+    # Afterwards, patch_target will be changed while patch_source will fixed.
+    patch_source_pyramid.clear()
+    JT_source_pyramid.clear()
+    Hinv_source_pyramid.clear()
+
+    for level in range(pyramid_level):
+        patch_source = []
+        for window in windows:
+            patch_source.append(window.crop(pyramid_source[level]))
+            if level < pyramid_level - 1:
+                window.pyrDown()
+
+        # Calculate the Jacobian and Hessen matrix of patch_source
+        JT_source = []
+        Hinv_source = []
+        for patch in patch_source:
+            """
+            # cv.Sobel(_, _, x, y, ...), x indicating the horizontal, 
+            # while it's in fact the y axis, for the y is the column.
+            # horizontal means increase at column.
+            """
+            gradient_x = cv.Sobel(patch, cv.CV_64F, 1, 0, ksize=3)
+            gradient_y = cv.Sobel(patch, cv.CV_64F, 0, 1, ksize=3)
+            gradient_x_w = gradient_x * weight_map
+            gradient_y_w = gradient_y * weight_map
+
+            J_x = np.reshape(gradient_x, (-1, 1))
+            J_y = np.reshape(gradient_y, (-1, 1))
+            J_x_w = np.reshape(gradient_x_w, (-1, 1))
+            J_y_w = np.reshape(gradient_y_w, (-1, 1))
+
+            J = np.concatenate((J_x, J_y), axis=1)
+            J_w = np.concatenate((J_x_w, J_y_w), axis=1)
+            JT_w = np.transpose(J_w)
+            H = np.matmul(JT_w, J)
+            Hinv = np.linalg.inv(H)
+            # Noticed that we only collect the weighted JT here.
+            JT_source.append(JT_w)
+            Hinv_source.append(Hinv)
+
+        # Collect all the pre-processed data in each level.
+        patch_source_pyramid.append(patch_source)
+        JT_source_pyramid.append(JT_source)
+        Hinv_source_pyramid.append(Hinv_source)
+    #
+    # """
+    # Sequential Execution
+    # """
+    max_iter_step = 15
+    for level in range(pyramid_level-1, -1, -1):
+        epsilon_der1 = 1.0 + level
+        for patch_s, window, JT, Hinv in zip(patch_source_pyramid[level], windows, JT_source_pyramid[level], Hinv_source_pyramid[level]):
+            count = 1
+            while True:
+                # Patch of target. which will move in each iteration.
+                patch_t = window.crop(pyramid_target[level])
+                # Calculate the residual
+                r = patch_t - patch_s
+                r = np.reshape(r, (-1, 1))
+                der1 = np.matmul(JT, r)
+                der1_norm = np.linalg.norm(der1)
+                delta = - np.matmul(Hinv, der1)
+                if der1_norm < epsilon_der1 or count > max_iter_step:
+                    if level != 0:
+                        # When reach the final level, stop the up-sample.
+                        window.pyrUp()
+                    break
+                else:
+                    window.move(delta[0][0], delta[1][0])
+                    count += 1
+    predictions = []
+    for window in windows:  # type: Window
+        predictions.append([window.center_x + window.Dx, window.center_y + window.Dy])
+    return np.array(predictions)
 
 def track_bidirectional(faces, locations):
     patch_size = 15
-    max_step = 10
     frames_num = len(faces)
+    pyramid_level = 4
 
     forward_pts = [locations[0].copy()]
     for i in range(1, frames_num):
-        # HWC(CV) to CHW(Torch)
-        feature_old = torch.tensor(faces[i-1]).transpose(0, 2).transpose(1, 2).float() / 255
-        feature_new = torch.tensor(faces[i]).transpose(0, 2).transpose(1, 2).float() / 255
-        location_old = torch.tensor(forward_pts[i - 1])
-        forward_pt = lk_track(feature_old, feature_new, location_old, patch_size, max_step).numpy()
+        feature_old = faces[i-1] / 255.0
+        feature_new = faces[i] / 255.0
+        location_old = forward_pts[i - 1]
+        forward_pt = lk_track(feature_old, feature_new, location_old, patch_size, pyramid_level)
         forward_pts.append(forward_pt)
 
     feedback_pts = [None] * (frames_num - 1) + [forward_pts[-1].copy()]
     for i in range(frames_num - 2, -1, -1):
-        feature_old = torch.tensor(faces[i+1]).transpose(0, 2).transpose(1, 2).float() / 255
-        feature_new = torch.tensor(faces[i]).transpose(0, 2).transpose(1, 2).float() / 255
-        location_old = torch.tensor(feedback_pts[i + 1])
-        feedback_pt = lk_track(feature_old, feature_new, location_old, patch_size, max_step).numpy()
+        feature_old = faces[i+1] / 255.0
+        feature_new = faces[i] / 255.0
+        location_old = feedback_pts[i - 1]
+        feedback_pt = lk_track(feature_old, feature_new, location_old, patch_size, pyramid_level)
         feedback_pts[i] = feedback_pt
 
     return forward_pts, feedback_pts
