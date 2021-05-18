@@ -110,11 +110,21 @@ and you can see the prediction results (predicted label and score of the corresp
 - [x] Upload the demo (2021/3/29)
 - [ ] Update the face/landmark detector.
 - [ ] Update the calibration module. 
-  - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14, **LATEST**)
+  - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14)
+  - [x] Implement the pyramidal LK with openCV API. (2021/5/18, **LATEST**)
   - [ ] Optimize the speed.
 - [ ] Optimize the RNN part.
 
-
+# Log
+- 2021/5/18
+  - **Updated the model weights.** Now we provide weights trained on FF++ (./model_weights/ff) 
+    and Deeperforensics-1.0 (./model_weights/deeper). We use `deeper` by default, 
+    because the given examples are from this dataset. You can change to `ff` in `classify.py` 
+    L107--L113.
+  - **Provide faster LK tracker.** We now use openCV optical api to achieve LK track. 
+    The Numpy version may cause some problems in `np.linalg.inv`, and we plan to fix it on June.
+  - **Update GPU support.** We restrict Tensorflow to use up the memory of GPU when it is supported.
+    Although CPU is enough for inference. The GPU memory occupation may be < 1G.
 
 # Notice
 

@@ -5,6 +5,7 @@ import dlib
 from collections import OrderedDict
 import cv2
 from calib_utils import track_bidirectional
+
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 FACIAL_LANDMARKS_68_IDXS = OrderedDict([
@@ -130,8 +131,6 @@ def check_and_merge(location, forward, feedback, P_predict, status_fw=None, stat
 
     target = location[1]
     forward_predict = forward[1]
-    # forward_diff = forward_predict - target
-    # forward_dist = np.linalg.norm(forward_diff, axis=1, keepdims=True)
 
     # To ensure the robustness through feedback-check
     forward_base = forward[0]  # Also equal to location[0]
@@ -239,48 +238,87 @@ def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
     num_pts = 68
     P_predict = np.array([0] * num_pts).reshape(num_pts).astype(float)
     print("Tracking")
-    for i in tqdm(range(frames_num - 1)):
+    for i in tqdm(range(locations_sum - 1)):
         faces_seg = faces[i:i + segment_length]
         locations_seg = locations[i:i + segment_length]
 
-        locations_track_start = [locations_track[i]]
-        forward_pts, feedback_pts = track_bidirectional(faces_seg, locations_track_start)
+        #----------------------------------------------------------------------#
+        """
+        Numpy Version
+        """
 
+        # locations_track_start = [locations_track[i]]
+        # forward_pts, feedback_pts = track_bidirectional(faces_seg, locations_track_start)
         #
+        # forward_pts = np.rint(forward_pts).astype(int)
+        # feedback_pts = np.rint(feedback_pts).astype(int)
+        # merge_pt, check, P_predict = check_and_merge(locations_seg, forward_pts, feedback_pts, P_predict)
+
+        #----------------------------------------------------------------------#
+        """
+        OpenCV Version
+        """
+
+        lk_params = dict(winSize=(15, 15),
+                         maxLevel=3,
+                         criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+        # Use the tracked current location as input. Also use the next frame's predicted location for
+        # auxiliary initialization.
+
+        start_pt = locations_track[i].astype(np.float32)
+        target_pt = locations_seg[1].astype(np.float32)
+
+        forward_pt, status_fw, err_fw = cv2.calcOpticalFlowPyrLK(faces_seg[0], faces_seg[1],
+                                                                 start_pt, target_pt, **lk_params,
+                                                                 flags=cv2.OPTFLOW_USE_INITIAL_FLOW)
+        feedback_pt, status_fb, err_fb = cv2.calcOpticalFlowPyrLK(faces_seg[1], faces_seg[0],
+                                                                  forward_pt, start_pt, **lk_params,
+                                                                  flags=cv2.OPTFLOW_USE_INITIAL_FLOW)
+
+        forward_pts = [locations_track[i].copy(), forward_pt]
+        feedback_pts = [feedback_pt, forward_pt.copy()]
+
         forward_pts = np.rint(forward_pts).astype(int)
         feedback_pts = np.rint(feedback_pts).astype(int)
 
-        merge_pt, check, P_predict = check_and_merge(locations_seg, forward_pts, feedback_pts, P_predict)
+        merge_pt, check, P_predict = check_and_merge(locations_seg, forward_pts, feedback_pts, P_predict, status_fw,
+                                                     status_fb)
+
+        # ----------------------------------------------------------------------#
 
         locations_track.append(merge_pt)
 
     """
     If us visualization, write the results to the visualize output folder.
     """
-    if use_visualization:
-        fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
-        frame_size = (frames[0].shape[1], frames[0].shape[0])
-        origin_video = cv2.VideoWriter(visualize_path+video+"_origin.avi",
-                                       fourcc, fps, frame_size)
-        track_video = cv2.VideoWriter(visualize_path+video+"_track.avi",
-                                      fourcc, fps, frame_size)
+    if locations_sum != frames_num:
+        print("INFO: Landmarks detection failed in some frames. Therefore we disable the "
+              "visualization for this video. It will be optimized in future version.")
+    else:
+        if use_visualization:
+            fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
+            frame_size = (frames[0].shape[1], frames[0].shape[0])
+            origin_video = cv2.VideoWriter(visualize_path+video+"_origin.avi",
+                                           fourcc, fps, frame_size)
+            track_video = cv2.VideoWriter(visualize_path+video+"_track.avi",
+                                          fourcc, fps, frame_size)
 
-        print("Visualizing")
-        for i in tqdm(range(frames_num)):
-            frame_origin = frames[i].copy()
-            frame_track = frames[i].copy()
-            shape_origin = shapes_origin[i]
-            para_shift = shapes_para[i][0:2]
-            para_scale = shapes_para[i][2]
-            shape_track = np.rint(locations_track[i] / para_scale + para_shift).astype(int)
-            for (x, y) in shape_origin:
-                cv2.circle(frame_origin, (x, y), 2, (0, 0, 255), -1)
-            for (x, y) in shape_track:
-                cv2.circle(frame_track, (x, y), 2, (0, 255, 0), -1)
-            origin_video.write(frame_origin)
-            track_video.write(frame_track)
-        origin_video.release()
-        track_video.release()
+            print("Visualizing")
+            for i in tqdm(range(frames_num)):
+                frame_origin = frames[i].copy()
+                frame_track = frames[i].copy()
+                shape_origin = shapes_origin[i]
+                para_shift = shapes_para[i][0:2]
+                para_scale = shapes_para[i][2]
+                shape_track = np.rint(locations_track[i] / para_scale + para_shift).astype(int)
+                for (x, y) in shape_origin:
+                    cv2.circle(frame_origin, (x, y), 2, (0, 0, 255), -1)
+                for (x, y) in shape_track:
+                    cv2.circle(frame_track, (x, y), 2, (0, 255, 0), -1)
+                origin_video.write(frame_origin)
+                track_video.write(frame_track)
+            origin_video.release()
+            track_video.release()
 
     aligned_landmarks = []
     for i in locations_track:
