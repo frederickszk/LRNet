@@ -1,6 +1,9 @@
 # LRNet
 Landmark Recurrent Network: An efficient and robust framwork for Deepfakes detection
-> The implementation for paper: **Improving the Efficiency and Robustness for Deepfakes Detection through Precise Geometric Features (CVPR2021)**.
+> The implementation for paper: **Improving the Efficiency and Robustness for Deepfakes Detection through Precise Geometric Features (CVPR2021)**. 
+> 
+>[[Paper Link](https://arxiv.org/abs/2104.04480)]
+
 
 
 # Description
