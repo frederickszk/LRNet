@@ -126,7 +126,7 @@ and you can see the prediction results (predicted label and score of the corresp
     L107--L113.
   - **Provide faster LK tracker.** We now use openCV optical api to achieve LK track. 
     The Numpy version may cause some problems in `np.linalg.inv`, and we plan to fix it on June.
-  - **Update GPU support.** We restrict Tensorflow to use up the memory of GPU when it is supported.
+  - **Update GPU support.** We restrict Tensorflow not to use up the memory of GPU when it is supported.
     Although CPU is enough for inference. The GPU memory occupation may be < 1G.
 
 # Notice
