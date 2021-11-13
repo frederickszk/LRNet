@@ -11,6 +11,8 @@ Landmark Recurrent Network: An efficient and robust framwork for Deepfakes detec
 > In this root directory, there is the demo code of our proposed framework *LRNet*. It reproduces the whole procedure from a input video sample to its corresponding predicted label. 
 >
 > For easily training and evaluating the *LRNet*, you can enter the `./training/` for more details.
+>
+> If you would like to use your own landmark detector to generate the dataset, you can enter the `./calibrator` for more details.
 
 ## Folders
 
@@ -33,6 +35,10 @@ The visualize results of landmrks extraction. The original landmarks detection (
 `training` **(new)**
 
 Training and evaluation codes.
+
+`calibrator` **(new)**
+
+Landmark calibrator API.
 
 ## Codes
 
@@ -121,7 +127,7 @@ and you can see the prediction results (predicted label and score of the corresp
 - [x] Update the calibration module. 
   - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14)
   - [x] Implement the pyramidal LK with openCV API. (2021/5/18)
-  - [ ] Provide API for easier use.
+  - [x] Provide API for easier use. (2021/11/13, **LATEST**)
 - [ ] Optimize the RNN part.
   - [x] Update the training codes. (2021/11/13, **LATEST**)
   - [x] For PyTorch version, optimize the dropout layer. (2021/11/13, **LATEST**)
@@ -142,7 +148,8 @@ and you can see the prediction results (predicted label and score of the corresp
   - **Update GPU support.** We restrict Tensorflow not to use up the memory of GPU when it is supported. Although CPU is enough for inference. The GPU memory occupation may be < 1G.
 - 2021/11/13
   - **Update the training and testing codes.**
-  - **Release FF++(c23) landmark datasets**
+  - **Release FF++(c23) landmark datasets.**
+  - **Update the plug-and-use landmark calibrator API.**
 
 
 
