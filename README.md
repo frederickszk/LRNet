@@ -8,7 +8,9 @@ Landmark Recurrent Network: An efficient and robust framwork for Deepfakes detec
 
 # Description
 
-> At current version, it is still the demo code of our proposed framework *LRNet*. It reproduces the whole procedure from a input video sample to its corresponding predicted label. We will update soon to optimize some components of it.
+> In this root directory, there is the demo code of our proposed framework *LRNet*. It reproduces the whole procedure from a input video sample to its corresponding predicted label. 
+>
+> For easily training and evaluating the *LRNet*, you can enter the `./training/` for more details.
 
 ## Folders
 
@@ -27,6 +29,10 @@ The two-stream RNN's weight.
 `visualize`
 
 The visualize results of landmrks extraction. The original landmarks detection (without calibration) is shown in "_origin.avi", and the calibrated one is shown in ".track.avi".
+
+`training`==(new)==
+
+Training and evaluation codes.
 
 ## Codes
 
@@ -61,7 +67,7 @@ DLIB landmarks detector parameters. **(Need to download MANUALLY.)**
 - imutils
 - dlib
     - CPU version is sufficient.
-    - We do not include the necessary detector model (~100.7Mb). You may download it at  http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+    - We do not include the necessary detector model (~100.7Mb). You may download it at [here](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2) .
 
 
 ## For classification
@@ -83,7 +89,7 @@ To extract the landmarks from input videos, please ensure that all the samples a
 python extract_landmarks.py
 ```
 
-You can also specific your own input videos path by `-i` or disable the visualization by `-v`.
+You can also specific your own input videos path by `-i` or enable the visualization by `-v`.
 
 For detailed, please consult
 
@@ -112,23 +118,47 @@ and you can see the prediction results (predicted label and score of the corresp
 
 - [x] Upload the demo (2021/3/29)
 - [ ] Update the face/landmark detector.
-- [ ] Update the calibration module. 
+- [x] Update the calibration module. 
   - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14)
-  - [x] Implement the pyramidal LK with openCV API. (2021/5/18, **LATEST**)
-  - [ ] Optimize the speed.
+  - [x] Implement the pyramidal LK with openCV API. (2021/5/18)
+  - [ ] Provide API for easier use.
 - [ ] Optimize the RNN part.
+  - [x] Update the training codes. (2021/11/13, **LATEST**)
+  - [x] For PyTorch version, optimize the dropout layer. (2021/11/13, **LATEST**)
+  - [ ] Model structure exploration
+- [ ] Gradually release the datasets
+  - [ ] FF++
+    - [x] c23 (2021/11/13, **LATEST**)
+
+
 
 # Log
 - 2021/5/18
-  - **Updated the model weights.** Now we provide weights trained on FF++ (./model_weights/ff) 
+  - **Update the model weights.** Now we provide weights trained on FF++ (./model_weights/ff) 
     and Deeperforensics-1.0 (./model_weights/deeper). We use `deeper` by default, 
     because the given examples are from this dataset. You can change to `ff` in `classify.py` 
     L107--L113.
-  - **Provide faster LK tracker.** We now use openCV optical api to achieve LK track. 
-    The Numpy version may cause some problems in `np.linalg.inv`, and we plan to fix it on June.
-  - **Update GPU support.** We restrict Tensorflow not to use up the memory of GPU when it is supported.
-    Although CPU is enough for inference. The GPU memory occupation may be < 1G.
+  - **Provide faster LK tracker.** We now use openCV optical api to achieve LK track. It would be faster and more stable.
+  - **Update GPU support.** We restrict Tensorflow not to use up the memory of GPU when it is supported. Although CPU is enough for inference. The GPU memory occupation may be < 1G.
+- 2021/11/13
+  - **Update the training and testing codes.**
+  - **Release FF++(c23) landmark datasets**
 
-# Notice
 
-This is only a demo to show the whole detection framework, thus several components of our codes need optimization, and we are continuing to organize the code. The calibration module will be further designed as an API to calibrate the landmarks extracted by any other landmark detectors.
+
+# Citation
+
+If our work helps your research, welcome for the citation:
+
+```latex
+@inproceedings{sun2021improving,
+  title={Improving the Efficiency and Robustness of Deepfakes Detection through Precise Geometric Features},
+  author={Sun, Zekun and Han, Yujie and Hua, Zeyu and Ruan, Na and Jia, Weijia},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={3609--3618},
+  year={2021}
+}
+```
+
+
+

@@ -5,11 +5,6 @@ import cv2
 from landmark_utils import detect_frames_track
 
 
-CALIB = ['Y', 'N']
-VIS = ['Y', 'N']
-
-
-
 def detect_track(input_path, video, use_visualization, visualize_path):
     vidcap = cv2.VideoCapture(os.path.join(input_path, video))
     fps = vidcap.get(cv2.CAP_PROP_FPS)
@@ -26,8 +21,6 @@ def detect_track(input_path, video, use_visualization, visualize_path):
     return np.array(raw_data)
 
 
-
-
 def main(args):
 
     input_path = args.input_path
@@ -41,20 +34,16 @@ def main(args):
     if not os.path.exists(output_path):
         os.makedirs("./landmarks/")
 
-    if visualize == 'Y':
+    if visualize:
         print("Settings: Visualize the extraction results.")
-        use_visualization = True
     else:
         print("Settings: NOT visualize the extraction results.")
-        use_visualization = False
 
     # use_visualization:
     visualize_path = "./visualize/"
-    if use_visualization:
+    if visualize:
         if not os.path.exists(visualize_path):
             os.makedirs("./visualize/")
-
-
 
     videos = os.listdir(input_path)
     for video in videos:
@@ -62,7 +51,7 @@ def main(args):
             continue
 
         print("Extract landmarks from {}.".format(video))
-        raw_data = detect_track(input_path, video, use_visualization, visualize_path)
+        raw_data = detect_track(input_path, video, visualize, visualize_path)
 
         if len(raw_data) == 0:
             print("No face detected", video)
@@ -72,19 +61,16 @@ def main(args):
     return
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Extract landmarks sequences from input videos.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('-i', '--input_path', type=str, default='./input/',
-                        help= "Input videos path (folder)"
+                        help="Input videos path (folder)"
                         )
-    parser.add_argument('-v', '--visualize', type=str, default='Y',
-                        help="If visualize the extraction results ('Y' or 'N').",
-                        choices=VIS
+    parser.add_argument('-v', '--visualize', action='store_true',
+                        help="If visualize the extraction results."
                         )
     args = parser.parse_args()
     main(args)
