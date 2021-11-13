@@ -22,7 +22,7 @@ from LC import calibrator
 results = calibrator(video_file, landmark_sequence)
 ```
 
-The `video_file` is your video file name end with ".mp4", etc. The `landmark_sequence` is a sequence contains the landmark positions in each video frame with the shape of ![](http://latex.codecogs.com/gif.latex?N \times 68 \times 2). And this API return the calibrated and aligned landmark sequence `result` with the shape of ![](http://latex.codecogs.com/gif.latex?N \times 136). Note that the `result` is also normalized into 0~1, which can be used for training and testing the model.
+The `video_file` is your video file name end with ".mp4", etc. The `landmark_sequence` is a sequence contains the landmark positions in each video frame with the shape of ![](http://latex.codecogs.com/gif.latex?N\times68\times2). And this API return the calibrated and aligned landmark sequence `result` with the shape of ![](http://latex.codecogs.com/gif.latex?N\times136). Note that the `result` is also normalized into 0~1, which can be used for training and testing the model.
 
 
 
