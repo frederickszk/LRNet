@@ -12,11 +12,11 @@ The structure of `Origin`, `DF`, `FS`, `F2F`, `NT` should be like (take `DF` as 
 
 ```css
 |-- DF
-	|-- c23
-		|-- train
-			< 000_003.txt, ..., 799_809.txt >
-		|-- test
-			< 800_840.txt, ..., 999_960.txt >
+    |-- c23
+        |-- train
+            < 000_003.txt, ..., 799_809.txt >
+        |-- test
+            < 800_840.txt, ..., 999_960.txt >
 ```
 
 Therefore, you can download the dataset (link listed below) and copy the `c23` folder into corresponding folder.

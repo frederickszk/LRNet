@@ -30,7 +30,7 @@ The two-stream RNN's weight.
 
 The visualize results of landmrks extraction. The original landmarks detection (without calibration) is shown in "_origin.avi", and the calibrated one is shown in ".track.avi".
 
-`training`==(new)==
+`training` **(new)**
 
 Training and evaluation codes.
 
