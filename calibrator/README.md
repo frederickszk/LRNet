@@ -28,7 +28,7 @@ The `video_file` is your video file name end with ".mp4", etc. The `landmark_seq
 
 ### Example
 
-For easier to understand the process, we provide an example in `./example/` folder. This video comes from DF(c23), and the corresponding landmark results are detected by [[OpenFace](https://github.com/TadasBaltrusaitis/OpenFace)] toolkit. We can achieve a success API by:
+For easier to understand the process, we provide an example in `./example/` folder. This video comes from DF(c23), and the corresponding landmark results are detected by [[OpenFace](https://github.com/TadasBaltrusaitis/OpenFace)] toolkit. We can achieve a successful API call by:
 
 ```python
 from LC import calibrator, readin_csv
