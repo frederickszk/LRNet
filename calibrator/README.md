@@ -41,3 +41,24 @@ np.savetxt(video_name+".txt", results, fmt='%1.5f')
 Then you would see a new `000_003.txt` in folder `./example/`
 
 You can also uncomment the example code in `LC.py` (L288~291) and directly run it to get the same result.
+
+
+
+### Utils
+We now provide utils for processing a whole dataset (in `utils.py`). The requirements are:
+- tqdm
+- numpy
+
+The utils are designed for the workflow that the facial 2D landmarks are extracted by [[OpenFace](https://github.com/TadasBaltrusaitis/OpenFace)] toolkit.
+In this pipeline, each landmark sequence (corresponding to a video) is recorded in a csv file. 
+We can carry out the calibration on the dataset as follows:
+
+```python
+from uitls import calibrate_batch
+
+video_path = [The directory of the video datasets]
+csv_path = [The directory of the extracted landmarks (csv files)]
+output_path = [The directory to save the calibrated landmarks (txt files)]
+
+calibrate_batch(video_path, csv_path, output_path)
+```

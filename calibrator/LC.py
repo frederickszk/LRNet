@@ -1,34 +1,18 @@
 import cv2
 import numpy as np
-from collections import OrderedDict
 import csv
+from collections import OrderedDict
 
 FACIAL_LANDMARKS_68_IDXS = OrderedDict([
-	("mouth", (48, 68)),
-	("inner_mouth", (60, 68)),
-	("right_eyebrow", (17, 22)),
-	("left_eyebrow", (22, 27)),
-	("right_eye", (36, 42)),
-	("left_eye", (42, 48)),
-	("nose", (27, 36)),
-	("jaw", (0, 17))
+    ("mouth", (48, 68)),
+    ("inner_mouth", (60, 68)),
+    ("right_eyebrow", (17, 22)),
+    ("left_eyebrow", (22, 27)),
+    ("right_eye", (36, 42)),
+    ("left_eye", (42, 48)),
+    ("nose", (27, 36)),
+    ("jaw", (0, 17))
 ])
-
-
-def readin_csv(file):
-    with open(file+".csv", 'r') as f:
-        reader = csv.reader(f)
-        shape_sequence = []
-        for i, record in enumerate(reader):
-            if i == 0:
-                continue
-            # if eval(record[4]) != 1:
-            #     continue
-            landmarks = []
-            for j in range(68):
-                landmarks.append((eval(record[5 + j]), eval(record[5 + 68 + j])))
-            shape_sequence.append(landmarks)
-    return shape_sequence
 
 
 def shape_to_face(shape, width, height, scale=1.2):
@@ -70,8 +54,8 @@ def shape_to_face(shape, width, height, scale=1.2):
 
 def landmark_align(shape):
     desiredLeftEye = (0.35, 0.25)
-    desiredFaceWidth=2
-    desiredFaceHeight=2
+    desiredFaceWidth = 2
+    desiredFaceHeight = 2
     (lStart, lEnd) = FACIAL_LANDMARKS_68_IDXS["left_eye"]
     (rStart, rEnd) = FACIAL_LANDMARKS_68_IDXS["right_eye"]
 
@@ -79,8 +63,8 @@ def landmark_align(shape):
     rightEyePts = shape[rStart:rEnd]
 
     # compute the center of mass for each eye
-    leftEyeCenter = leftEyePts.mean(axis=0)#.astype("int")
-    rightEyeCenter = rightEyePts.mean(axis=0)#.astype("int")
+    leftEyeCenter = leftEyePts.mean(axis=0)  # .astype("int")
+    rightEyeCenter = rightEyePts.mean(axis=0)  # .astype("int")
     # compute the angle between the eye centroids
     dY = rightEyeCenter[1] - leftEyeCenter[1]
     dX = rightEyeCenter[0] - leftEyeCenter[0]
@@ -108,7 +92,7 @@ def landmark_align(shape):
     M = cv2.getRotationMatrix2D(eyesCenter, angle, scale)
 
     # update the translation component of the matrix
-    tX = 0#desiredFaceWidth * 0.5
+    tX = 0  # desiredFaceWidth * 0.5
     tY = desiredFaceHeight * desiredLeftEye[1]
     M[0, 2] += (tX - eyesCenter[0])
     M[1, 2] += (tY - eyesCenter[1])
@@ -118,7 +102,7 @@ def landmark_align(shape):
     temp[:, 0:2] = shape
     temp[:, 2] = 1
     aligned_landmarks = np.matmul(M, temp.T)
-    return aligned_landmarks.T #.astype("int"))
+    return aligned_landmarks.T  # .astype("int"))
 
 
 def check_and_merge(location, forward, feedback, P_predict, status_fw=None, status_fb=None):
@@ -195,14 +179,17 @@ def calibrate_landmark(frames, shape_sequence):
         frame = frames[i]
         shape = shape_sequence[i]
         face, face_size = shape_to_face(shape, frame_width, frame_height, 1.2)
+        if face_size == 0:
+            # Detection failed at this frame. Here we simply skip it.
+            continue
         faceFrame = frame[face[1]: face[3], face[0]:face[2]]
         if face_size < face_size_normalized:
             inter_para = cv2.INTER_CUBIC
         else:
             inter_para = cv2.INTER_AREA
         face_norm = cv2.resize(faceFrame, (face_size_normalized, face_size_normalized), interpolation=inter_para)
-        scale_shape = face_size_normalized/face_size
-        shape_norm = np.rint((shape-np.array([face[0], face[1]])) * scale_shape).astype(int)
+        scale_shape = face_size_normalized / face_size
+        shape_norm = np.rint((shape - np.array([face[0], face[1]])) * scale_shape).astype(int)
         faces.append(face_norm)
         shapes_para.append([face[0], face[1], scale_shape])
         # shapes_origin.append(shape)
@@ -281,6 +268,30 @@ def calibrator(video_file, landmark_sequence):
     vidcap.release()
     return np.array(calibrated_aligned_landmarks)
 
+
+"""
+Utils for OpenFace
+"""
+
+
+def readin_csv(file):
+    with open(file + ".csv", 'r') as f:
+        reader = csv.reader(f)
+        shape_sequence = []
+        for i, record in enumerate(reader):
+            if i == 0:
+                continue
+
+            # Although there are some failed detection, we load them to align with video frame.
+            # Therefore, this block is commented.
+            # if eval(record[4]) != 1:
+            #     continue
+
+            landmarks = []
+            for j in range(68):
+                landmarks.append((eval(record[5 + j]), eval(record[5 + 68 + j])))
+            shape_sequence.append(landmarks)
+    return shape_sequence
 
 """
 Example code

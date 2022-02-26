@@ -127,7 +127,8 @@ and you can see the prediction results (predicted label and score of the corresp
 - [x] Update the calibration module. 
   - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14)
   - [x] Implement the pyramidal LK with openCV API. (2021/5/18)
-  - [x] Provide API for easier use. (2021/11/13, **LATEST**)
+  - [x] Provide API for easier use. (2021/11/13)
+  - [x] Provide utils for calibrating the dataset (under OpenFace workflow). (2022/2/27, **LATEST**)
 - [ ] Optimize the RNN part.
   - [x] Update the training codes. (2021/11/13, **LATEST**)
   - [x] For PyTorch version, optimize the dropout layer. (2021/11/13, **LATEST**)
