@@ -18,9 +18,7 @@ techniques to alleviate the noise caused by different landmark detectors.
 3. **Embed the landmark sequence into two feature sequences and input them into two RNN**. The output of two RNN 
    are merged to obtain the final prediction.
    
-
-![LRNet.png](https://s2.loli.net/2022/02/28/SMQkW6sumAqHGKR.png)
-
+<img src="https://s2.loli.net/2022/03/01/TFZO86nwbiry2xl.png" alt="LRNet.png" style="zoom:75%;"/>
 # Description
 
 > In this root directory, there is the demo code of our proposed framework *LRNet*. It reproduces the whole procedure from a input video sample to its corresponding predicted label. 
