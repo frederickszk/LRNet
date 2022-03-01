@@ -4,7 +4,22 @@ Landmark Recurrent Network: An efficient and robust framwork for Deepfakes detec
 > 
 >[[Paper Link](https://arxiv.org/abs/2104.04480)]
 
+# Overview
+LRNet is a light-weight and effective Deepfakes detection framework. 
+It analyzes the sequence of geometric features in facial videos 
+to capture the *temporal artifacts* (such as unnatural expressions) and make predictions.
 
+It takes three steps to discriminate a forged face video:
+
+1. **Extract the 2-D facial landmark sequence from the video**. It can be conveniently realized by some open-source toolkit 
+   like Dlib, OpenFace, MediaPipe, etc.
+2. **De-noise the sequence by our carefully-devised calibration module**. It utilizes optical flow and Kalman filter
+techniques to alleviate the noise caused by different landmark detectors.
+3. **Embed the landmark sequence into two feature sequences and input them into two RNN**. The output of two RNN 
+   are merged to obtain the final prediction.
+   
+
+![LRNet.png](https://s2.loli.net/2022/02/28/SMQkW6sumAqHGKR.png)
 
 # Description
 
@@ -118,7 +133,19 @@ python classify.py
 
 and you can see the prediction results (predicted label and score of the corresponding sample. Noticed the score that "0=real" and "1=fake".
 
+# Citation
 
+If our work helps your research, welcome for the citation:
+
+```latex
+@inproceedings{sun2021improving,
+  title={Improving the Efficiency and Robustness of Deepfakes Detection through Precise Geometric Features},
+  author={Sun, Zekun and Han, Yujie and Hua, Zeyu and Ruan, Na and Jia, Weijia},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={3609--3618},
+  year={2021}
+}
+```
 
 # TODO & Update List
 
@@ -154,19 +181,7 @@ and you can see the prediction results (predicted label and score of the corresp
 
 
 
-# Citation
 
-If our work helps your research, welcome for the citation:
-
-```latex
-@inproceedings{sun2021improving,
-  title={Improving the Efficiency and Robustness of Deepfakes Detection through Precise Geometric Features},
-  author={Sun, Zekun and Han, Yujie and Hua, Zeyu and Ruan, Na and Jia, Weijia},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  pages={3609--3618},
-  year={2021}
-}
-```
 
 
 
