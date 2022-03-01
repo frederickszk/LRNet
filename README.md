@@ -18,7 +18,7 @@ techniques to alleviate the noise caused by different landmark detectors.
 3. **Embed the landmark sequence into two feature sequences and input them into two RNN**. The output of two RNN 
    are merged to obtain the final prediction.
    
-<img src="https://s2.loli.net/2022/03/01/TFZO86nwbiry2xl.png" alt="LRNet.png" style="zoom:65%;"/>
+<img src="https://s2.loli.net/2022/03/01/TFZO86nwbiry2xl.png" alt="LRNet.png" width="75%;"/>
 
 # Description
 
