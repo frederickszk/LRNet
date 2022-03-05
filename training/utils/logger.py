@@ -3,10 +3,11 @@ class Logger:
         self.if_status_registered = False
         self.if_parameter_registered = False
 
-    def register_status(self, device, add_real, add_fake, add_weights):
+    def register_status(self, device, dataset, add_weights):
         self.device = device
-        self.add_real = add_real
-        self.add_fake = add_fake
+        self.dataset_name = dataset.name
+        self.add_real = dataset.add_real
+        self.add_fake = dataset.add_fake
         self.add_weights = add_weights
         self.if_status_registered = True
 
@@ -31,9 +32,10 @@ class Logger:
         print("\n")
         print("#-------Status--------#")
         print("Using device: ", self.device)
-        print("Dataset of real samples: ", self.add_real)
-        print("Dataset of fake samples: ", self.add_fake)
-        print("Folder of model weights: ", self.add_weights)
+        print("Dataset name: ", self.dataset_name)
+        print("Directory of real samples: ", self.add_real)
+        print("Directory of fake samples: ", self.add_fake)
+        print("Directory of model weights: ", self.add_weights)
         print("#-----Status End------#")
         print("\n")
         print("#-----Parameters------#")

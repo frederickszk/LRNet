@@ -11,7 +11,7 @@ def get_data(path, fake, block):
     Read the data into memory (for training).
     :param path: The path of the folder containing landmarks files.
     :param fake: Assign the label of the data. Original(real) = 0, and manipulated(fake) = 1.
-    :param block: block: The length of a 'block', i.e., the frames number of a video sample.
+    :param block: The length of a 'block', i.e., the frames number of a video sample.
     :return:
     """
     files = os.listdir(path)

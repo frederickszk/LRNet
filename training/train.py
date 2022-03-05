@@ -6,6 +6,7 @@ from utils.model import *
 from utils.logger import Logger
 from utils.data import load_data_train, load_data_test
 from utils.metric import *
+from utils.dataset import Dataset
 
 
 def train(model, train_iter, test_iter, optimizer, loss, epochs, device, add_weights_file):
@@ -60,7 +61,8 @@ def train(model, train_iter, test_iter, optimizer, loss, epochs, device, add_wei
 
 def main(args):
     if_gpu = args.gpu
-
+    dataset_name = args.dataset
+    dataset_level = args.level
     """
     Initialization
     """
@@ -68,9 +70,6 @@ def main(args):
     BATCH_SIZE = 1024
     DROPOUT_RATE = 0.5
     RNN_UNIT = 64
-
-    add_real = './datasets/Origin/c23/'
-    add_fake = './datasets/DF/c23/'
     add_weights = './weights/test/'
 
     if if_gpu:
@@ -80,11 +79,14 @@ def main(args):
     else:
         device = 'cpu'
 
+    dataset = Dataset(name=dataset_name, level=dataset_level,
+                      block_size=BLOCK_SIZE, batch_size=BATCH_SIZE)
+
     """
     Logs
     """
     logger = Logger()
-    logger.register_status(device, add_real, add_fake, add_weights)
+    logger.register_status(device, dataset, add_weights)
     logger.register_parameter(BLOCK_SIZE, RNN_UNIT, BATCH_SIZE)
     logger.print_logs()
 
@@ -94,9 +96,9 @@ def main(args):
     """
 
     if True:
-        train_iter_A, train_iter_B = load_data_train(add_real, add_fake, BLOCK_SIZE, BATCH_SIZE)
+        train_iter_A, train_iter_B = load_data_train(dataset.add_real[0], dataset.add_fake[0], BLOCK_SIZE, BATCH_SIZE)
         test_iter_A, test_iter_B, test_labels, test_labels_video, test_sv, test_vc = \
-            load_data_test(add_real, add_fake, BLOCK_SIZE, BATCH_SIZE)
+            load_data_test(dataset.add_real[0], dataset.add_fake[0], BLOCK_SIZE, BATCH_SIZE)
 
         # ----For g1----#
         g1 = LRNet(RNN_UNIT, DROPOUT_RATE)
@@ -184,5 +186,16 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--gpu', action='store_true',
                         help="If use the GPU(CUDA) for training."
                         )
+    parser.add_argument('-d', '--dataset', required=True, type=str,
+                        choices=['DF', 'F2F', 'FS', 'NT', 'FF_all'],
+                        default='DF',
+                        help="Select the dataset used for training. "
+                             "Valid selections: ['DF', 'F2F', 'FS', 'NT', 'FF_all'] "
+                        )
+    parser.add_argument('-l', '--level', required=True, type=str,
+                        choices=['raw', 'c23', 'c40'],
+                        default='c23',
+                        help="Select the dataset used for training. "
+                             "Valid selections: ['raw', 'c23', 'c40'] ")
     args = parser.parse_args()
     main(args)
