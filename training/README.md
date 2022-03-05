@@ -98,7 +98,7 @@ python model_tf.py -h
 
 
 
-# PyTorch
+# PyTorch (Refactoring)
 
 ## Requirement
 
