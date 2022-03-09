@@ -180,7 +180,7 @@ class Dataset:
                 test_labels = np.concatenate((test_labels, real_labels), axis=0)
                 test_labels_video = np.concatenate((test_labels_video, real_labels_video), axis=0)
                 test_sv = np.concatenate((test_sv, real_sv), axis=0)
-                test_vc.update(real_sv)
+                test_vc.update(real_vc)
 
         # Flush the memory
         real_samples = None
@@ -210,8 +210,8 @@ class Dataset:
         test_dataset_A = Data.TensorDataset(test_samples, test_labels)
         test_dataset_B = Data.TensorDataset(test_samples_diff, test_labels)
 
-        test_iter_A = Data.DataLoader(test_dataset_A, batch_size, shuffle=True)
-        test_iter_B = Data.DataLoader(test_dataset_B, batch_size, shuffle=True)
+        test_iter_A = Data.DataLoader(test_dataset_A, batch_size, shuffle=False)
+        test_iter_B = Data.DataLoader(test_dataset_B, batch_size, shuffle=False)
 
         return test_iter_A, test_iter_B, test_labels, test_labels_video, test_sv, test_vc
 
@@ -236,7 +236,7 @@ class Dataset:
                 test_labels = np.concatenate((test_labels, real_labels), axis=0)
                 test_labels_video = np.concatenate((test_labels_video, real_labels_video), axis=0)
                 test_sv = np.concatenate((test_sv, real_sv), axis=0)
-                test_vc.update(real_sv)
+                test_vc.update(real_vc)
 
         # Flush the memory
         real_samples = None
@@ -260,7 +260,7 @@ class Dataset:
         test_labels = torch.tensor(test_labels, dtype=torch.long)
 
         test_dataset_A = Data.TensorDataset(test_samples, test_labels)
-        test_iter_A = Data.DataLoader(test_dataset_A, batch_size, shuffle=True)
+        test_iter_A = Data.DataLoader(test_dataset_A, batch_size, shuffle=False)
 
         return test_iter_A, test_labels, test_labels_video, test_sv, test_vc
 
@@ -285,7 +285,7 @@ class Dataset:
                 test_labels = np.concatenate((test_labels, real_labels), axis=0)
                 test_labels_video = np.concatenate((test_labels_video, real_labels_video), axis=0)
                 test_sv = np.concatenate((test_sv, real_sv), axis=0)
-                test_vc.update(real_sv)
+                test_vc.update(real_vc)
 
         # Flush the memory
         real_samples_diff = None
@@ -309,6 +309,6 @@ class Dataset:
         test_labels = torch.tensor(test_labels, dtype=torch.long)
 
         test_dataset_B = Data.TensorDataset(test_samples_diff, test_labels)
-        test_iter_B = Data.DataLoader(test_dataset_B, batch_size, shuffle=True)
+        test_iter_B = Data.DataLoader(test_dataset_B, batch_size, shuffle=False)
 
         return test_iter_B, test_labels, test_labels_video, test_sv, test_vc

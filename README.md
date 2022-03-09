@@ -151,34 +151,66 @@ If our work helps your research, welcome for the citation:
 # TODO & Update List
 
 - [x] Upload the demo (2021/3/29)
-- [ ] Update the face/landmark detector.
+- [ ] Update the face/landmark detector in demo.
 - [x] Update the calibration module. 
-  - [x] Update the pyramidal LK with numpy and openCV. (2021/4/14)
-  - [x] Implement the pyramidal LK with openCV API. (2021/5/18)
-  - [x] Provide API for easier use. (2021/11/13)
+  - [x] Update the pyramidal LK with numpy and openCV.
+  - [x] Implement the pyramidal LK with openCV API.
+  - [x] Provide API for easier use.
   - [x] Provide utils for calibrating the dataset (under OpenFace workflow). (2022/2/27, **LATEST**)
 - [ ] Optimize the RNN part.
-  - [x] Update the training codes. (2021/11/13, **LATEST**)
-  - [x] For PyTorch version, optimize the dropout layer. (2021/11/13, **LATEST**)
+  - [x] Update the training codes.
+  - [x] For PyTorch version, optimize the dropout layer.
+  - [x] Greatly refactor the training and evaluation codes for PyTorch version. (2022/3/10, **LATEST**)
   - [ ] Model structure exploration
 - [ ] Gradually release the datasets
   - [ ] FF++
-    - [x] c23 (2021/11/13, **LATEST**)
-
-
+    - [x] c23
+    - [ ] raw
+    - [ ] c40
 
 # Log
-- 2021/5/18
-  - **Update the model weights.** Now we provide weights trained on FF++ (./model_weights/ff) 
-    and Deeperforensics-1.0 (./model_weights/deeper). We use `deeper` by default, 
-    because the given examples are from this dataset. You can change to `ff` in `classify.py` 
-    L107--L113.
-  - **Provide faster LK tracker.** We now use openCV optical api to achieve LK track. It would be faster and more stable.
-  - **Update GPU support.** We restrict Tensorflow not to use up the memory of GPU when it is supported. Although CPU is enough for inference. The GPU memory occupation may be < 1G.
-- 2021/11/13
-  - **Update the training and testing codes.**
-  - **Release FF++(c23) landmark datasets.**
-  - **Update the plug-and-use landmark calibrator API.**
+
+<details>
+    <summary> 2021/5/18</summary>
+	<ul>
+        <li>
+            <strong>Update the model weights.</strong> Now we provide weights trained on FF++ (./model<em>weights/ff) and Deeperforensics-1.0 (./model</em>weights/deeper). We use <code>deeper</code> by default, because the given examples are from this dataset. You can change to <code>ff</code> in <code>classify.py</code> L107--L113.
+        </li>
+     	<li>
+            <strong>Provide faster LK tracker.</strong> We now use openCV optical api to achieve LK track. It would be faster and more stable.
+		</li>
+        <li>
+            <strong>Update GPU support.</strong> We restrict Tensorflow not to use up the memory of GPU when it is supported. Although CPU is enough for inference. The GPU memory occupation may be &lt; 1G.
+        </li>
+    </ul>
+</details>
+
+<details>
+    <summary> 2021/11/13</summary>
+	<ul>
+        <li>
+            <strong>Update the training and testing codes.</strong>
+        </li>
+     	<li>
+            <strong>Release FF++(c23) landmark datasets.</strong> 
+		</li>
+        <li>
+            <strong>Update the plug-and-use landmark calibrator API.</strong> 
+        </li>
+    </ul>
+</details>
+
+<details>
+    <summary> 2022/3/10</summary>
+	<ul>
+        <li>
+            <strong>Provide utils for calibrating the dataset.</strong> Currently it is devised for OpenFace work flow. We consider add more workflow supports in the future.
+        </li>
+     	<li>
+            <strong>Greatly refactor the training and evaluation codes for PyTorch version.</strong> They can help perform more flexible training and evaluating strategies, which is convenient for further research.
+		</li>
+    </ul>
+</details>
 
 
 
