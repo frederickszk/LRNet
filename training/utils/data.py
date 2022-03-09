@@ -19,6 +19,7 @@ def get_data(path, fake, block):
     x_diff = []
     y = []
 
+    print("Loading data from: ", path)
     for file in tqdm(files):
         vectors = np.loadtxt(join(path, file))
         for i in range(0, vectors.shape[0] - block, block):
@@ -38,6 +39,7 @@ def get_data_for_test(path, fake, block):
     :param path: The path of the folder containing landmarks files.
     :param fake: Assign the label of the data. Original(real) = 0, and manipulated(fake) = 1.
     :param block: The length of a 'block', i.e., the frames number of a video sample.
+    # :param dataset_name: The name of the dataset that files belong to.
     :return:x: The feature vector A. It contains all the data in the datasets. Shape: [N, 136].
             x_diff; The feature vector B.  Shape: [N-1, 136]
             y: The labels. Shape: [N]
@@ -57,7 +59,7 @@ def get_data_for_test(path, fake, block):
     count_y = {}
     sample_to_video = []
 
-    print("Loading data and embedding...")
+    print("Loading data from: ", path)
     for file in tqdm(files):
         vectors = np.loadtxt(join(path, file))
         video_y.append(fake)
@@ -73,13 +75,18 @@ def get_data_for_test(path, fake, block):
             y.append(fake)
 
             # Dict for counting number of samples in video
-            if file not in count_y:
-                count_y[file] = 1
+            # if file not in count_y:
+            #     count_y[file] = 1
+            # else:
+            #     count_y[file] += 1
+            file_dir = join(path, file)
+            if file_dir not in count_y:
+                count_y[file_dir] = 1
             else:
-                count_y[file] += 1
+                count_y[file_dir] += 1
 
             # Recording each samples belonging
-            sample_to_video.append(file)
+            sample_to_video.append(file_dir)
     return np.array(x), np.array(x_diff), np.array(y), np.array(video_y), np.array(sample_to_video), count_y
 
 
@@ -112,7 +119,7 @@ def load_data_test(add_real, add_fake, block_size, batch_size):
     test_samples, test_samples_diff, test_labels, test_labels_video, test_sv, test_vc = \
         get_data_for_test(join(add_real, "test/"), 0, block_size)
     tmp_samples, tmp_samples_diff, tmp_labels, tmp_labels_video, tmp_sv, tmp_vc = \
-        get_data_for_test(join(add_fake + "test/"), 1, block_size)
+        get_data_for_test(join(add_fake, "test/"), 1, block_size)
 
     test_samples = torch.tensor(np.concatenate((test_samples, tmp_samples), axis=0), dtype=torch.float32)
     test_samples_diff = torch.tensor(np.concatenate((test_samples_diff, tmp_samples_diff), axis=0), dtype=torch.float32)

@@ -63,6 +63,7 @@ def main(args):
     if_gpu = args.gpu
     dataset_name = args.dataset
     dataset_level = args.level
+    branch_selection = args.branch
     """
     Initialization
     """
@@ -70,6 +71,9 @@ def main(args):
     BATCH_SIZE = 1024
     DROPOUT_RATE = 0.5
     RNN_UNIT = 64
+    EPOCHS_g1 = 100
+    EPOCHS_g2 = 50
+    LEARNING_RATE=0.005
     add_weights = './weights/test/'
 
     if if_gpu:
@@ -79,43 +83,68 @@ def main(args):
     else:
         device = 'cpu'
 
-    dataset = Dataset(name=dataset_name, level=dataset_level,
-                      block_size=BLOCK_SIZE, batch_size=BATCH_SIZE)
+    dataset = Dataset(name=dataset_name, level=dataset_level)
 
     """
     Logs
     """
     logger = Logger()
-    logger.register_status(device, dataset, add_weights)
-    logger.register_parameter(BLOCK_SIZE, RNN_UNIT, BATCH_SIZE)
+    logger.register_status(dataset=dataset,
+                           device=device,
+                           add_weights=add_weights,
+                           branch_selection=branch_selection)
+    logger.register_parameter(block_size=BLOCK_SIZE,
+                              batch_size=BATCH_SIZE,
+                              rnn_unit=RNN_UNIT,
+                              epochs_g1=EPOCHS_g1,
+                              epochs_g2=EPOCHS_g2,
+                              learning_rate=LEARNING_RATE)
     logger.print_logs()
 
     """
-    Define the models.
-    # model = g1, model_diff = g2
+    Loading data
     """
-
-    if True:
-        train_iter_A, train_iter_B = load_data_train(dataset.add_real[0], dataset.add_fake[0], BLOCK_SIZE, BATCH_SIZE)
+    train_iter_A = None
+    train_iter_B = None
+    test_iter_A = None
+    test_iter_B = None
+    if branch_selection == 'g1':
+        train_iter_A = dataset.load_data_train_g1(BLOCK_SIZE, BATCH_SIZE)
+        test_iter_A, test_labels, test_labels_video, test_sv, test_vc = \
+            dataset.load_data_test_g1(BLOCK_SIZE, BATCH_SIZE)
+    elif branch_selection == 'g2':
+        train_iter_B = dataset.load_data_train_g2(BLOCK_SIZE, BATCH_SIZE)
+        test_iter_B, test_labels, test_labels_video, test_sv, test_vc = \
+            dataset.load_data_test_g2(BLOCK_SIZE, BATCH_SIZE)
+    elif branch_selection == 'all':
+        train_iter_A, train_iter_B = dataset.load_data_train_all(BLOCK_SIZE, BATCH_SIZE)
         test_iter_A, test_iter_B, test_labels, test_labels_video, test_sv, test_vc = \
-            load_data_test(dataset.add_real[0], dataset.add_fake[0], BLOCK_SIZE, BATCH_SIZE)
+            dataset.load_data_test_all(BLOCK_SIZE, BATCH_SIZE)
+    else:
+        print("Unknown branch selection:", branch_selection, '. Please check and restart')
+        return
 
+    """
+    Training
+    """
+    if branch_selection == 'g1' or branch_selection == 'all':
         # ----For g1----#
+        assert train_iter_A, test_iter_A is not None
         g1 = LRNet(RNN_UNIT, DROPOUT_RATE)
-        optimizer = optim.Adam(g1.parameters(), lr=0.005)
+        optimizer = optim.Adam(g1.parameters(), lr=LEARNING_RATE)
         loss = nn.NLLLoss()
-        epochs = 500
         add_weights_file = join(add_weights, 'g1_tmp.pth')
-        log_g1 = train(g1, train_iter_A, test_iter_A, optimizer, loss, epochs, device, add_weights_file)
+        log_g1 = train(g1, train_iter_A, test_iter_A, optimizer, loss, EPOCHS_g1, device, add_weights_file)
         # ----g1 end----#
 
+    if branch_selection == 'g2' or branch_selection == 'all':
         # ----For g2----#
-        # g2 = LRNet(RNN_UNIT, DROPOUT_RATE)
-        # optimizer = optim.Adam(g2.parameters(), lr=0.005)
-        # loss = nn.NLLLoss()
-        # epochs = 300
-        # add_weights_file = join(add_weights, 'g2.pth')
-        # log_g2 = train(g2, train_iter_B, test_iter_B, optimizer, loss, epochs, device, add_weights_file)
+        assert train_iter_B, test_iter_B is not None
+        g2 = LRNet(RNN_UNIT, DROPOUT_RATE)
+        optimizer = optim.Adam(g2.parameters(), lr=LEARNING_RATE)
+        loss = nn.NLLLoss()
+        add_weights_file = join(add_weights, 'g2_tmp.pth')
+        log_g2 = train(g2, train_iter_B, test_iter_B, optimizer, loss, EPOCHS_g2, device, add_weights_file)
         # ----g2 end----#
 
     # if if_evaluate:
@@ -186,16 +215,21 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--gpu', action='store_true',
                         help="If use the GPU(CUDA) for training."
                         )
-    parser.add_argument('-d', '--dataset', required=True, type=str,
+    parser.add_argument('-d', '--dataset', type=str,
                         choices=['DF', 'F2F', 'FS', 'NT', 'FF_all'],
                         default='DF',
                         help="Select the dataset used for training. "
                              "Valid selections: ['DF', 'F2F', 'FS', 'NT', 'FF_all'] "
                         )
-    parser.add_argument('-l', '--level', required=True, type=str,
+    parser.add_argument('-l', '--level', type=str,
                         choices=['raw', 'c23', 'c40'],
                         default='c23',
-                        help="Select the dataset used for training. "
+                        help="Select the dataset compression level. "
                              "Valid selections: ['raw', 'c23', 'c40'] ")
+    parser.add_argument('-b', '--branch', type=str,
+                        choices=['g1', 'g2', 'all'],
+                        default='all',
+                        help="Select which branch of the LRNet to be trained. "
+                             "Valid selections: ['g1', 'g2', 'all']")
     args = parser.parse_args()
     main(args)
