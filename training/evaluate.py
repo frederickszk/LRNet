@@ -137,7 +137,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Training and evaluating of LRNet (PyTorch version).',
+        description='Evaluating codes of LRNet (PyTorch version).',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('-g', '--gpu', action='store_true',

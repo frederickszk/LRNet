@@ -73,7 +73,7 @@ def main(args):
     EPOCHS_g1 = 400
     EPOCHS_g2 = 20
     LEARNING_RATE = 0.005
-    add_weights = './weights/test/'
+    add_weights = './weights/torch/'
 
     if if_gpu:
         # Optional to uncomment if some bugs occur.
@@ -131,7 +131,7 @@ def main(args):
         g1 = LRNet(RNN_UNIT, DROPOUT_RATE)
         optimizer = optim.Adam(g1.parameters(), lr=LEARNING_RATE)
         loss = nn.NLLLoss()
-        add_weights_file = join(add_weights, 'g1_tmp.pth')
+        add_weights_file = join(add_weights, 'g1.pth')
         log_g1 = train(g1, train_iter_A, test_iter_A, optimizer, loss, EPOCHS_g1, device, add_weights_file)
 
     if branch_selection == 'g2' or branch_selection == 'all':
@@ -139,13 +139,13 @@ def main(args):
         g2 = LRNet(RNN_UNIT, DROPOUT_RATE)
         optimizer = optim.Adam(g2.parameters(), lr=LEARNING_RATE)
         loss = nn.NLLLoss()
-        add_weights_file = join(add_weights, 'g2_tmp.pth')
+        add_weights_file = join(add_weights, 'g2.pth')
         log_g2 = train(g2, train_iter_B, test_iter_B, optimizer, loss, EPOCHS_g2, device, add_weights_file)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Training and evaluating of LRNet (PyTorch version).',
+        description='Training codes of LRNet (PyTorch version).',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('-g', '--gpu', action='store_true',
