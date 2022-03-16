@@ -17,6 +17,7 @@ for gpu in gpus:
 device = "CPU" if len(gpus) == 0 else "GPU"
 print("Using device: {}".format(device))
 
+
 def get_data_for_test(path, fake, block):  # fake:manipulated=1 original=0
     files = os.listdir(path)
     x = []

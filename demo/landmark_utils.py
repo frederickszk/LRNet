@@ -1,6 +1,5 @@
 from tqdm import tqdm
 import numpy as np
-from imutils import face_utils
 import dlib
 from collections import OrderedDict
 import cv2
@@ -9,14 +8,14 @@ from calib_utils import track_bidirectional
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 FACIAL_LANDMARKS_68_IDXS = OrderedDict([
-	("mouth", (48, 68)),
-	("inner_mouth", (60, 68)),
-	("right_eyebrow", (17, 22)),
-	("left_eyebrow", (22, 27)),
-	("right_eye", (36, 42)),
-	("left_eye", (42, 48)),
-	("nose", (27, 36)),
-	("jaw", (0, 17))
+    ("mouth", (48, 68)),
+    ("inner_mouth", (60, 68)),
+    ("right_eyebrow", (17, 22)),
+    ("left_eyebrow", (22, 27)),
+    ("right_eye", (36, 42)),
+    ("left_eye", (42, 48)),
+    ("nose", (27, 36)),
+    ("jaw", (0, 17))
 ])
 
 
@@ -39,7 +38,7 @@ def shape_to_face(shape, width, height, scale=1.2):
 
     face_size = int(max(x_max - x_min, y_max - y_min) * scale)
     # Enforce it to be even
-    # Thus the real whole bounding box size will be a odd
+    # Thus the real whole bounding box size will be an odd
     # But after cropping the face size will become even and
     # keep same to the face_size parameter.
     face_size = face_size // 2 * 2
@@ -56,27 +55,31 @@ def shape_to_face(shape, width, height, scale=1.2):
     face_new = [int(x1), int(y1), int(x2), int(y2)]
     return face_new, face_size
 
+
 def predict_single_frame(frame):
     """
     :param frame: A full frame of video
     :return:
-    face: bounding box of face
+    face_num: the number of face (just to verify if successfully detect a face)
     shape: landmark locations
     """
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = detector(gray, 0)
-#     faces = detector(frame, 0)
     if len(faces) < 1:
-        return 0, 0
+        return 0, None
     face = faces[0]
-    shape = predictor(frame, face)
-    shape = face_utils.shape_to_np(shape)
-    return face, shape
+
+    landmarks = predictor(frame, face)
+    face_landmark_list = [(p.x, p.y) for p in landmarks.parts()]
+    shape = np.array(face_landmark_list)
+
+    return 1, shape
+
 
 def landmark_align(shape):
     desiredLeftEye = (0.35, 0.25)
-    desiredFaceWidth=2
-    desiredFaceHeight=2
+    desiredFaceWidth = 2
+    desiredFaceHeight = 2
     (lStart, lEnd) = FACIAL_LANDMARKS_68_IDXS["left_eye"]
     (rStart, rEnd) = FACIAL_LANDMARKS_68_IDXS["right_eye"]
 
@@ -84,8 +87,8 @@ def landmark_align(shape):
     rightEyePts = shape[rStart:rEnd]
 
     # compute the center of mass for each eye
-    leftEyeCenter = leftEyePts.mean(axis=0)#.astype("int")
-    rightEyeCenter = rightEyePts.mean(axis=0)#.astype("int")
+    leftEyeCenter = leftEyePts.mean(axis=0)  # .astype("int")
+    rightEyeCenter = rightEyePts.mean(axis=0)  # .astype("int")
     # compute the angle between the eye centroids
     dY = rightEyeCenter[1] - leftEyeCenter[1]
     dX = rightEyeCenter[0] - leftEyeCenter[0]
@@ -113,7 +116,7 @@ def landmark_align(shape):
     M = cv2.getRotationMatrix2D(eyesCenter, angle, scale)
 
     # update the translation component of the matrix
-    tX = 0#desiredFaceWidth * 0.5
+    tX = 0  # desiredFaceWidth * 0.5
     tY = desiredFaceHeight * desiredLeftEye[1]
     M[0, 2] += (tX - eyesCenter[0])
     M[1, 2] += (tY - eyesCenter[1])
@@ -123,7 +126,8 @@ def landmark_align(shape):
     temp[:, 0:2] = shape
     temp[:, 2] = 1
     aligned_landmarks = np.matmul(M, temp.T)
-    return aligned_landmarks.T #.astype("int"))
+    return aligned_landmarks.T  # .astype("int"))
+
 
 def check_and_merge(location, forward, feedback, P_predict, status_fw=None, status_fb=None):
     num_pts = 68
@@ -178,8 +182,8 @@ def check_and_merge(location, forward, feedback, P_predict, status_fw=None, stat
 
 
 def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
-
     frames_num = len(frames)
+    assert frames_num != 0
     frame_height, frame_width = frames[0].shape[:2]
     """
     Pre-process:
@@ -204,24 +208,25 @@ def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
     print("Detecting:")
     for i in tqdm(range(frames_num)):
         frame = frames[i]
-        face, shape = predict_single_frame(frame)
-        if face == 0:
+        face_num, shape = predict_single_frame(frame)
+
+        if face_num == 0:
             if len(shapes_origin) == 0:
                 skipped += 1
                 # print("Skipped", skipped, "Frame_num", frames_num)
                 continue
-            shape = shapes_origin[i-1-skipped]
+            shape = shapes_origin[i - 1 - skipped]
 
         face, face_size = shape_to_face(shape, frame_width, frame_height, 1.2)
         faceFrame = frame[face[1]: face[3],
-                            face[0]:face[2]]
+                    face[0]:face[2]]
         if face_size < face_size_normalized:
             inter_para = cv2.INTER_CUBIC
         else:
             inter_para = cv2.INTER_AREA
         face_norm = cv2.resize(faceFrame, (face_size_normalized, face_size_normalized), interpolation=inter_para)
-        scale_shape = face_size_normalized/face_size
-        shape_norm = np.rint((shape-np.array([face[0], face[1]])) * scale_shape).astype(int)
+        scale_shape = face_size_normalized / face_size
+        shape_norm = np.rint((shape - np.array([face[0], face[1]])) * scale_shape).astype(int)
         faces.append(face_norm)
         shapes_para.append([face[0], face[1], scale_shape])
         shapes_origin.append(shape)
@@ -242,9 +247,9 @@ def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
         faces_seg = faces[i:i + segment_length]
         locations_seg = locations[i:i + segment_length]
 
-        #----------------------------------------------------------------------#
+        # ----------------------------------------------------------------------#
         """
-        Numpy Version
+        Numpy Version (DEPRECATED)
         """
 
         # locations_track_start = [locations_track[i]]
@@ -254,7 +259,7 @@ def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
         # feedback_pts = np.rint(feedback_pts).astype(int)
         # merge_pt, check, P_predict = check_and_merge(locations_seg, forward_pts, feedback_pts, P_predict)
 
-        #----------------------------------------------------------------------#
+        # ----------------------------------------------------------------------#
         """
         OpenCV Version
         """
@@ -298,9 +303,9 @@ def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
         if use_visualization:
             fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
             frame_size = (frames[0].shape[1], frames[0].shape[0])
-            origin_video = cv2.VideoWriter(visualize_path+video+"_origin.avi",
+            origin_video = cv2.VideoWriter(visualize_path + video + "_origin.avi",
                                            fourcc, fps, frame_size)
-            track_video = cv2.VideoWriter(visualize_path+video+"_track.avi",
+            track_video = cv2.VideoWriter(visualize_path + video + "_track.avi",
                                           fourcc, fps, frame_size)
 
             print("Visualizing")
@@ -323,11 +328,8 @@ def detect_frames_track(frames, fps, use_visualization, visualize_path, video):
     aligned_landmarks = []
     for i in locations_track:
         shape = landmark_align(i)
-
         shape = shape.ravel()
         shape = shape.tolist()
         aligned_landmarks.append(shape)
 
     return aligned_landmarks
-
-

@@ -24,115 +24,15 @@ techniques to alleviate the noise caused by different landmark detectors.
 
 # Description
 
-> In this root directory, there is the demo code of our proposed framework *LRNet*. It reproduces the whole procedure from a input video sample to its corresponding predicted label. 
+> To go through the whole procedure of *LRNet*'s forgery detection (from an input video sample to its corresponding predicted label),
+> you can enter the `./demo/` for more details.
 >
 > For easily training and evaluating the *LRNet*, you can enter the `./training/` for more details.
 >
-> If you would like to use your own landmark detector to generate the dataset, you can enter the `./calibrator` for more details.
-
-## Folders
-
-`input`
-
-The input sample videos. Here we provide a real and a fake video.
-
-`landmarks`
-
-The extracted landmarks. Each video is corresponding to a .txt file.
-
-`model_weights`
-
-The two-stream RNN's weight.
-
-`visualize`
-
-The visualize results of landmrks extraction. The original landmarks detection (without calibration) is shown in "_origin.avi", and the calibrated one is shown in ".track.avi".
-
-`training` **(new)**
-
-Training and evaluation codes.
-
-`calibrator` **(new)**
-
-Landmark calibrator API.
-
-## Codes
-
-`extract_landmarks.py`
-
-Perform the landmarks extraction and calibration.
-
-`landmark_utils.py`
-
-Some utils of landmarks extraction, Kalman filter, landmarks alignment and so on.
-
-`calib_utils.py`
-
-Some utils of calibration module, including the LK operation and so on.
-
-`classify.py`
-
-Perform the classification on extracted landmarks. Including reading and embedding the data, building the two-stream RNN and inference the samples.
-
-`shape_predictor_68_face_landmarks.dat`
-
-DLIB landmarks detector parameters. **(Need to download MANUALLY.)**
-
-# Requirements
-
-## For landmarks extraction
-
-- argparse
-- numpy
-- python-opencv
-- tqdm
-- imutils
-- dlib
-    - CPU version is sufficient.
-    - We do not include the necessary detector model (~100.7Mb). You may download it at [here](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2) .
-
-
-## For classification
-
-- numpy
-- tqdm
-- TensorFlow >2.0
-    - CPU version is sufficient
+> If you would like to use your own landmark detector to generate the dataset, you can enter the `./calibrator/` for more details.
 
 
 
-# Useage
-
-## Landmarks extraction
-
-To extract the landmarks from input videos, please ensure that all the samples are put in `./input` folder and run
-
-```python
-python extract_landmarks.py
-```
-
-You can also specific your own input videos path by `-i` or enable the visualization by `-v`.
-
-For detailed, please consult
-
-```python
-python extract_landmarks.py -h
-```
-
-> 1. Noted that the generated landmarks and visualized detection videos are put in the same folder as the code files, i.e. the "./", which cannot be specified. 
-> 2. We have provided generated landmarks extraction results and visualization videos in `./landmarks` and `./visualize`. Also you can delete these folders and regenerate them by yourself.
-
-## Classification
-
-Before classification, make sure that the landmarks have been extracted and put in `./landmarks` folder.
-
-Execute the following command:
-
-```python
-python classify.py
-```
-
-and you can see the prediction results (predicted label and score of the corresponding sample. Noticed the score that "0=real" and "1=fake".
 
 # Citation
 
@@ -150,14 +50,14 @@ If our work helps your research, welcome for the citation:
 
 # TODO & Update List
 
-- [x] Upload the demo (2021/3/29)
-- [ ] Update the face/landmark detector in demo.
+- [x] Upload the demo.
+  - [x] Organize the codes into the sub-folder. (2022/3/16, **LATEST**)
 - [x] Update the calibration module. 
   - [x] Update the pyramidal LK with numpy and openCV.
   - [x] Implement the pyramidal LK with openCV API.
   - [x] Provide API for easier use.
   - [x] Provide utils for calibrating the dataset (under OpenFace workflow). (2022/2/27, **LATEST**)
-- [ ] Optimize the RNN part.
+- [ ] Optimize the model.
   - [x] Update the training codes.
   - [x] For PyTorch version, optimize the dropout layer.
   - [x] Greatly refactor the training and evaluation codes for PyTorch version. (2022/3/10, **LATEST**)
@@ -209,6 +109,24 @@ If our work helps your research, welcome for the citation:
      	<li>
             <strong>Greatly refactor the training and evaluation codes for PyTorch version.</strong> They can help perform more flexible training and evaluating strategies, which is convenient for further research.
 		</li>
+    </ul>
+</details>
+
+<details>
+    <summary> 2022/3/16</summary>
+	<ul>
+        <li>
+            <strong>Organize the demo codes.</strong> Now the demo codes are gathered in the <code>./demo/</code> folder
+            , making the project's home page clean and tidy. 
+        </li>
+        <li>
+            <strong>Discussion: the selection of landmark detector in demo.</strong> 
+            We also try several landmark detectors and find that <code>Dlib</code> is relatively good solution. 
+            Although it's accuracy and stability are not the SOTA, it helps alleviate preparing  
+            burdensome dependencies (especially for deep-learning-based models). Besides, it's inference speed is fast
+            and suitable for reproducing the LRNet's framework. 
+            You could also replace it with other advanced landmark detectors.
+        </li>
     </ul>
 </details>
 

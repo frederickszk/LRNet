@@ -5,7 +5,7 @@ The calibrator API for denoising the landmarks, which is adopted in LRNet.
 # Requirements
 
 - numpy
-- python-opencv
+- [opencv-python](https://docs.opencv.org/4.5.5/da/df6/tutorial_py_table_of_contents_setup.html)
 
 
 

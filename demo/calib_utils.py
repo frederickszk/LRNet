@@ -8,6 +8,7 @@ JT_source_pyramid = []
 Hinv_source_pyramid = []
 windows = []
 
+
 class Window:
     def __init__(self, center_x, center_y, window_size):
         self.center_x = center_x
@@ -185,6 +186,7 @@ def lk_track(face_source, face_target, landmarks_source, window_size, pyramid_le
     for window in windows:  # type: Window
         predictions.append([window.center_x + window.Dx, window.center_y + window.Dy])
     return np.array(predictions)
+
 
 def track_bidirectional(faces, locations):
     patch_size = 15
