@@ -122,6 +122,12 @@ python train.py -h
 python evaluate.py -h
 ```
 
+- Jupyter Notebook
+
+We now provide training/evaluation codes in Jupyter Notebook. 
+The codes are the same as above but executed in an interactive approach.
+You would open the `train.ipynb` for more details.
+It's helpful in the situation that we only load the dataset once and train the model multiple times.
 
 
 # TensorFlow 2.x

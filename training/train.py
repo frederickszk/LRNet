@@ -8,7 +8,7 @@ from utils.metric import *
 from utils.dataset import Dataset
 
 
-def train(model, train_iter, test_iter, optimizer, loss, epochs, device, add_weights_file):
+def train_loop(model, train_iter, test_iter, optimizer, loss, epochs, device, add_weights_file):
     log_training_loss = []
     log_training_accuracy = []
     log_testing_accuracy = []
@@ -38,16 +38,16 @@ def train(model, train_iter, test_iter, optimizer, loss, epochs, device, add_wei
             samples_sum += samples_num
 
         test_acc = evaluate(model, test_iter, device)
+
         if test_acc >= best_test_acc:
-            save_hint = "\n Current test_acc:{:.4} exceeds the best record:{:.4}, " \
-                        "save the model to {}".format(test_acc, best_test_acc, add_weights_file)
+            save_hint = "save the model to {}".format(add_weights_file)
             torch.save(model.state_dict(), add_weights_file)
             best_test_acc = test_acc
         else:
-            save_hint = "\n Current test_acc does NOT exceed the best record:{:.4}. Skip.".format(best_test_acc)
+            save_hint = ""
 
-        tqdm.write("epoch:{}, loss:{:.4}, train_acc:{:.4}, test_acc:{:.4}".format(epoch, loss_sum/samples_sum,
-                                                                                  acc_sum/samples_sum, test_acc)
+        tqdm.write("epoch:{}, loss:{:.4}, train_acc:{:.4}, test_acc:{:.4}, best_record:{:.4}  "
+                   .format(epoch, loss_sum / samples_sum, acc_sum / samples_sum, test_acc, best_test_acc)
                    + save_hint)
 
         log_training_loss.append(loss_sum/samples_sum)
@@ -71,7 +71,7 @@ def main(args):
     DROPOUT_RATE = 0.5
     RNN_UNIT = 64
     EPOCHS_g1 = 400
-    EPOCHS_g2 = 20
+    EPOCHS_g2 = 300
     LEARNING_RATE = 0.005
     add_weights = './weights/torch/'
 
@@ -132,7 +132,7 @@ def main(args):
         optimizer = optim.Adam(g1.parameters(), lr=LEARNING_RATE)
         loss = nn.NLLLoss()
         add_weights_file = join(add_weights, 'g1.pth')
-        log_g1 = train(g1, train_iter_A, test_iter_A, optimizer, loss, EPOCHS_g1, device, add_weights_file)
+        log_g1 = train_loop(g1, train_iter_A, test_iter_A, optimizer, loss, EPOCHS_g1, device, add_weights_file)
 
     if branch_selection == 'g2' or branch_selection == 'all':
         assert train_iter_B, test_iter_B is not None
@@ -140,7 +140,7 @@ def main(args):
         optimizer = optim.Adam(g2.parameters(), lr=LEARNING_RATE)
         loss = nn.NLLLoss()
         add_weights_file = join(add_weights, 'g2.pth')
-        log_g2 = train(g2, train_iter_B, test_iter_B, optimizer, loss, EPOCHS_g2, device, add_weights_file)
+        log_g2 = train_loop(g2, train_iter_B, test_iter_B, optimizer, loss, EPOCHS_g2, device, add_weights_file)
 
 
 if __name__ == "__main__":
