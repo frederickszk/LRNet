@@ -9,8 +9,6 @@ class Dataset:
     def __init__(self, name, level):
         self.name = name
         self.level = level
-        # self.block_size = block_size
-        # self.batch_size = batch_size
         self.add_root = './datasets'  # Modify this if you change the root address of the dataset.
         self.add_real = []
         self.add_fake = []
@@ -167,20 +165,15 @@ class Dataset:
         for add_r in self.add_real:
             real_samples, real_samples_diff, real_labels, real_labels_video, real_sv, real_vc = \
                 get_data_for_test(join(add_r, "test/"), 0, block_size)
-            if test_samples is None:
-                test_samples = real_samples
-                test_samples_diff = real_samples_diff
-                test_labels = real_labels
-                test_labels_video = real_labels_video
-                test_sv = real_sv
-                test_vc = real_vc
-            else:
-                test_samples = np.concatenate((test_samples, real_samples), axis=0)
-                test_samples_diff = np.concatenate((test_samples_diff, real_samples_diff), axis=0)
-                test_labels = np.concatenate((test_labels, real_labels), axis=0)
-                test_labels_video = np.concatenate((test_labels_video, real_labels_video), axis=0)
-                test_sv = np.concatenate((test_sv, real_sv), axis=0)
-                test_vc.update(real_vc)
+
+            # Only load the real samples once.
+            test_samples = real_samples
+            test_samples_diff = real_samples_diff
+            test_labels = real_labels
+            test_labels_video = real_labels_video
+            test_sv = real_sv
+            test_vc = real_vc
+            break
 
         # Flush the memory
         real_samples = None
@@ -225,18 +218,14 @@ class Dataset:
         for add_r in self.add_real:
             real_samples, _, real_labels, real_labels_video, real_sv, real_vc = \
                 get_data_for_test(join(add_r, "test/"), 0, block_size)
-            if test_samples is None:
-                test_samples = real_samples
-                test_labels = real_labels
-                test_labels_video = real_labels_video
-                test_sv = real_sv
-                test_vc = real_vc
-            else:
-                test_samples = np.concatenate((test_samples, real_samples), axis=0)
-                test_labels = np.concatenate((test_labels, real_labels), axis=0)
-                test_labels_video = np.concatenate((test_labels_video, real_labels_video), axis=0)
-                test_sv = np.concatenate((test_sv, real_sv), axis=0)
-                test_vc.update(real_vc)
+
+            # Only load the real samples once.
+            test_samples = real_samples
+            test_labels = real_labels
+            test_labels_video = real_labels_video
+            test_sv = real_sv
+            test_vc = real_vc
+            break
 
         # Flush the memory
         real_samples = None
@@ -274,18 +263,14 @@ class Dataset:
         for add_r in self.add_real:
             _, real_samples_diff, real_labels, real_labels_video, real_sv, real_vc = \
                 get_data_for_test(join(add_r, "test/"), 0, block_size)
-            if test_samples_diff is None:
-                test_samples_diff = real_samples_diff
-                test_labels = real_labels
-                test_labels_video = real_labels_video
-                test_sv = real_sv
-                test_vc = real_vc
-            else:
-                test_samples_diff = np.concatenate((test_samples_diff, real_samples_diff), axis=0)
-                test_labels = np.concatenate((test_labels, real_labels), axis=0)
-                test_labels_video = np.concatenate((test_labels_video, real_labels_video), axis=0)
-                test_sv = np.concatenate((test_sv, real_sv), axis=0)
-                test_vc.update(real_vc)
+
+            # Only load the real samples once.
+            test_samples_diff = real_samples_diff
+            test_labels = real_labels
+            test_labels_video = real_labels_video
+            test_sv = real_sv
+            test_vc = real_vc
+            break
 
         # Flush the memory
         real_samples_diff = None

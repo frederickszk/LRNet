@@ -1,8 +1,6 @@
 import os
 from os.path import join
 import numpy as np
-import torch
-import torch.utils.data as Data
 from tqdm import tqdm
 
 
@@ -75,10 +73,6 @@ def get_data_for_test(path, fake, block):
             y.append(fake)
 
             # Dict for counting number of samples in video
-            # if file not in count_y:
-            #     count_y[file] = 1
-            # else:
-            #     count_y[file] += 1
             file_dir = join(path, file)
             if file_dir not in count_y:
                 count_y[file_dir] = 1
@@ -88,58 +82,3 @@ def get_data_for_test(path, fake, block):
             # Recording each samples belonging
             sample_to_video.append(file_dir)
     return np.array(x), np.array(x_diff), np.array(y), np.array(video_y), np.array(sample_to_video), count_y
-
-
-def load_data_train(add_real, add_fake, block_size, batch_size):
-    train_samples, train_samples_diff, train_labels = get_data(join(add_real, "train/"), 0, block_size)
-    tmp_samples, tmp_samples_diff, tmp_labels = get_data(join(add_fake, "train/"), 1, block_size)
-
-    train_samples = torch.tensor(np.concatenate((train_samples, tmp_samples), axis=0), dtype=torch.float32)
-    train_samples_diff = torch.tensor(np.concatenate((train_samples_diff, tmp_samples_diff), axis=0),
-                                      dtype=torch.float32)
-    train_labels = torch.tensor(np.concatenate((train_labels, tmp_labels), axis=0), dtype=torch.long)
-
-    train_dataset_A = Data.TensorDataset(train_samples, train_labels)
-    train_dataset_B = Data.TensorDataset(train_samples_diff, train_labels)
-
-    train_iter_A = Data.DataLoader(train_dataset_A, batch_size, shuffle=True)
-    train_iter_B = Data.DataLoader(train_dataset_B, batch_size, shuffle=True)
-
-    """
-    Flush the memory
-    """
-    tmp_samples = []
-    tmp_samples_diff = []
-    tmp_labels = []
-
-    return train_iter_A, train_iter_B
-
-
-def load_data_test(add_real, add_fake, block_size, batch_size):
-    test_samples, test_samples_diff, test_labels, test_labels_video, test_sv, test_vc = \
-        get_data_for_test(join(add_real, "test/"), 0, block_size)
-    tmp_samples, tmp_samples_diff, tmp_labels, tmp_labels_video, tmp_sv, tmp_vc = \
-        get_data_for_test(join(add_fake, "test/"), 1, block_size)
-
-    test_samples = torch.tensor(np.concatenate((test_samples, tmp_samples), axis=0), dtype=torch.float32)
-    test_samples_diff = torch.tensor(np.concatenate((test_samples_diff, tmp_samples_diff), axis=0), dtype=torch.float32)
-    test_labels = torch.tensor(np.concatenate((test_labels, tmp_labels), axis=0), dtype=torch.long)
-
-    test_dataset_A = Data.TensorDataset(test_samples, test_labels)
-    test_dataset_B = Data.TensorDataset(test_samples_diff, test_labels)
-
-    test_iter_A = Data.DataLoader(test_dataset_A, batch_size, shuffle=False)
-    test_iter_B = Data.DataLoader(test_dataset_B, batch_size, shuffle=False)
-
-    test_labels_video = np.concatenate((test_labels_video, tmp_labels_video), axis=0)
-    test_sv = np.concatenate((test_sv, tmp_sv), axis=0)
-    test_vc.update(tmp_vc)
-
-    """
-    Flush the memory
-    """
-    tmp_samples = []
-    tmp_samples_diff = []
-    tmp_labels = []
-
-    return test_iter_A, test_iter_B, test_labels, test_labels_video, test_sv, test_vc

@@ -21,6 +21,8 @@ def main(args):
     DROPOUT_RATE = 0.5
     RNN_UNIT = 64
     add_weights = './weights/torch/'
+    weights_name_g1 = 'g1.pth'
+    weights_name_g2 = 'g2.pth'
 
     if if_gpu:
         # Optional to uncomment if some bugs occur.
@@ -68,12 +70,12 @@ def main(args):
     acc_g2 = None
     if branch_selection == 'g1' or branch_selection == 'all':
         g1 = LRNet(RNN_UNIT, DROPOUT_RATE)
-        g1.load_state_dict(torch.load(join(add_weights, 'g1.pth')))
+        g1.load_state_dict(torch.load(join(add_weights, weights_name_g1)))
         acc_g1 = evaluate(g1, test_iter_A, device)
 
     if branch_selection == 'g2' or branch_selection == 'all':
         g2 = LRNet(RNN_UNIT, DROPOUT_RATE)
-        g2.load_state_dict(torch.load(join(add_weights, 'g2.pth')))
+        g2.load_state_dict(torch.load(join(add_weights, weights_name_g2)))
         acc_g2 = evaluate(g2, test_iter_B, device)
 
     """
@@ -126,9 +128,9 @@ def main(args):
     print("\n")
     print("#----Evaluation  Results----#")
     if branch_selection == 'g1' or branch_selection == 'all':
-        print("Evaluation (g1) - Acc: {:.4}".format(acc_g1))
+        print("Evaluation ({}) - Acc: {:.4}".format(weights_name_g1, acc_g1))
     if branch_selection == 'g2' or branch_selection == 'all':
-        print("Evaluation (g2) - Acc: {:.4}".format(acc_g2))
+        print("Evaluation ({}) - Acc: {:.4}".format(weights_name_g2, acc_g2))
     if branch_selection == 'all':
         print("Accuracy (sample-level): ", count_s / total_s)
     print("Accuracy (video-level): ", count_v / total_v)
