@@ -56,7 +56,7 @@ If our work helps your research, welcome for the citation:
   - [x] Update the pyramidal LK with numpy and openCV.
   - [x] Implement the pyramidal LK with openCV API.
   - [x] Provide API for easier use.
-  - [x] Provide utils for calibrating the dataset (under OpenFace workflow). (2022/2/27)
+  - [x] Provide utils for calibrating the dataset (under OpenFace workflow). 
 - [ ] Optimize the model.
   - [x] Update the training codes.
   - [x] For PyTorch version, optimize the dropout layer.
@@ -76,7 +76,7 @@ If our work helps your research, welcome for the citation:
     <summary> 2021/5/18</summary>
 	<ul>
         <li>
-            <strong>Update the model weights.</strong> Now we provide weights trained on FF++ (./model<em>weights/ff) and Deeperforensics-1.0 (./model</em>weights/deeper). We use <code>deeper</code> by default, because the given examples are from this dataset. You can change to <code>ff</code> in <code>classify.py</code> L107--L113.
+            <strong>Update the demo's model weights.</strong> Now we provide demo's weights trained on FF++ (./demo/model<em>weights/ff) and Deeperforensics-1.0 (./demo/model</em>weights/deeper). We use <code>deeper</code> by default, because the given examples are from this dataset. You can change to <code>ff</code> in <code>classify.py</code> L107--L113.
         </li>
      	<li>
             <strong>Provide faster LK tracker.</strong> We now use openCV optical api to achieve LK track. It would be faster and more stable.
@@ -86,6 +86,7 @@ If our work helps your research, welcome for the citation:
         </li>
     </ul>
 </details>
+
 
 <details>
     <summary> 2021/11/13</summary>
