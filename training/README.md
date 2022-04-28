@@ -24,7 +24,7 @@ For facilitating the training and evaluation of LRNet, we would release the proc
   - [ ] NeuralTexture (NT)
     - [x] c23
 
-> This example codes perform the training on single DF(c23) dataset. While recent works tend to mix the 4 datasets for training. We have updated this training strategy on [2022/3/10]. And we also provide preliminary weights (without fine-tune, _PyTorch version only_) for the whole FF++ dataset. You can find it at `./weights/torch/g1_all.pth` and `./weights/torch/g2_all.pth`. It can achive *95.7%* accuracy.
+> This example codes perform the training on single DF(c23) dataset. While recent works tend to mix the 4 datasets for training. We have updated this training strategy on [2022/3/10]. And we also provide preliminary weights (not fine-tuned yet, _PyTorch version only_) for the whole FF++ dataset. You can find it at `./weights/torch/g1_all.pth` and `./weights/torch/g2_all.pth`. It can achive *95.7%* accuracy.
 
 
 
