@@ -13,7 +13,7 @@ The extracted landmarks. Each video is corresponding to a .txt file.
 
 `./model_weights`
 
-The two-stream RNN's weight.
+The two-stream RNN's weight. We provide two sets of weights here, you can check Log 2021/5/18 for more details (in `LRNet/README.md`).
 
 `./visualize`
 
