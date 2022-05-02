@@ -6,7 +6,7 @@ from utils.model import *
 from utils.logger import Logger
 from utils.metric import *
 from utils.dataset import Dataset
-
+from sklearn.metrics import roc_curve, auc
 
 def main(args):
     if_gpu = args.gpu
@@ -21,8 +21,8 @@ def main(args):
     DROPOUT_RATE = 0.5
     RNN_UNIT = 64
     add_weights = './weights/torch/'
-    weights_name_g1 = 'g1.pth'
-    weights_name_g2 = 'g2.pth'
+    weights_name_g1 = 'g1_all.pth'
+    weights_name_g2 = 'g2_all.pth'
 
     if if_gpu:
         # Optional to uncomment if some bugs occur.
@@ -122,6 +122,11 @@ def main(args):
         if result == test_labels_video[i]:
             count_v += 1
 
+    # For AUC evaluation
+    fpr, tpr, _ = roc_curve(test_labels_video, prediction_video)
+    roc_auc = auc(fpr, tpr)
+    plot_ROC(fpr, tpr, roc_auc)
+
     """
     Exhibit the evaluation results.
     """
@@ -132,8 +137,9 @@ def main(args):
     if branch_selection == 'g2' or branch_selection == 'all':
         print("Evaluation ({}) - Acc: {:.4}".format(weights_name_g2, acc_g2))
     if branch_selection == 'all':
-        print("Accuracy (sample-level): ", count_s / total_s)
-    print("Accuracy (video-level): ", count_v / total_v)
+        print("Accuracy (sample-level): {:.4}".format(count_s / total_s))
+    print("Accuracy (video-level): {:.4}".format(count_v / total_v))
+    print("AUC (video-level): {:.4}".format(roc_auc))
     print("#------------End------------#")
 
 

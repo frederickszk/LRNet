@@ -63,6 +63,7 @@ If our work helps your research, welcome for the citation:
   - [x] Greatly refactor the training and evaluation codes for PyTorch version. (2022/3/10)
   - [x] Update the _Jupyter Notebook_ version training/evaluation codes. (2022/3/20, **LATEST**)
   - [x] Update the weights for the whole FF++ dataset. (2022/4/28, **LATEST**)
+  - [x] Update AUC evaluation codes. (Both .py and .ipynb) (2022/5/2, **LATEST**)
   - [ ] Model structure exploration
 - [ ] Gradually release the datasets
   - [ ] FF++

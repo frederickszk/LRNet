@@ -36,17 +36,15 @@ For facilitating the training and evaluation of LRNet, we would release the proc
 
 - PyTorch
 
-*(Recommend)* GPU acceleration support:
-
-- cudatoolkit
+- cudatoolkit #*(Alternative but recommended)* GPU acceleration support
+- [sklearn](https://scikit-learn.org/stable/install.html#installation-instructions) # For some evaluation metric
+- [matplotlib](https://matplotlib.org/stable/users/getting_started/) # For plotting the ROC curve
 
 > The example codes have been validated on the near-latest PyTorch, the environment is:
 >
 > `PyTorch==1.8.0; cudatoolkit==11.0.221 `
 >
 > You can consult the [Official website](https://pytorch.org/) for GPU configure assistance.
-
-
 
 ## Getting started
 
