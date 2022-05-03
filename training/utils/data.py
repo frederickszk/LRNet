@@ -60,7 +60,6 @@ def get_data_for_test(path, fake, block):
     print("Loading data from: ", path)
     for file in tqdm(files):
         vectors = np.loadtxt(join(path, file))
-        video_y.append(fake)
 
         for i in range(0, vectors.shape[0] - block, block):
             vec = vectors[i:i + block, :]
@@ -81,4 +80,6 @@ def get_data_for_test(path, fake, block):
 
             # Recording each samples belonging
             sample_to_video.append(file_dir)
+
+        video_y.append(fake)
     return np.array(x), np.array(x_diff), np.array(y), np.array(video_y), np.array(sample_to_video), count_y
