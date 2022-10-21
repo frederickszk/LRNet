@@ -1,0 +1,14 @@
+trained_model: 'mobilenet0.25_Final.pth'  # Trained state_dict file path to open
+network: 'mobile0.25'  # Backbone network mobile0.25 or resnet50
+
+#trained_model: 'Resnet50_Final.pth'  # Trained state_dict file path to open
+#network: 'resnet50'  # Backbone network mobile0.25 or resnet50
+
+cpu: False  # Use cpu inference
+origin_size: True  # Whether use origin image size to evaluate
+confidence_threshold: 0.02
+top_k: 5000
+nms_threshold: 0.4
+keep_top_k: 750
+#save_image: True
+#vis_thres: 0.5

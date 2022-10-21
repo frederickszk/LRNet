@@ -52,6 +52,7 @@ If our work helps your research, welcome for the citation:
 
 - [x] Upload the demo.
   - [x] Organize the codes into the sub-folder. (2022/3/16)
+  - [x] Greatly refactor and upgrade the landmark extractor (2022/10/22, **LATEST**) 
 - [x] Update the calibration module. 
   - [x] Update the pyramidal LK with numpy and openCV.
   - [x] Implement the pyramidal LK with openCV API.
@@ -61,10 +62,10 @@ If our work helps your research, welcome for the citation:
   - [x] Update the training codes.
   - [x] For PyTorch version, optimize the dropout layer.
   - [x] Greatly refactor the training and evaluation codes for PyTorch version. (2022/3/10)
-  - [x] Update the _Jupyter Notebook_ version training/evaluation codes. (2022/3/20, **LATEST**)
-  - [x] Update the weights for the whole FF++ dataset. (2022/4/28, **LATEST**)
-  - [x] Update AUC evaluation codes. (Both .py and .ipynb) (2022/5/2, **LATEST**)
-  - [ ] Model structure exploration
+  - [x] Update the _Jupyter Notebook_ version training/evaluation codes. (2022/3/20)
+  - [x] Update the weights for the whole FF++ dataset. (2022/4/28)
+  - [x] Update AUC evaluation codes. (Both .py and .ipynb) (2022/5/2)
+  - [ ] Update the model trained with new version landmarks and normative datasets in these days.
 - [ ] Gradually release the datasets
   - [ ] FF++
     - [x] c23
