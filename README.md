@@ -65,12 +65,12 @@ If our work helps your research, welcome for the citation:
   - [x] Update the _Jupyter Notebook_ version training/evaluation codes. (2022/3/20)
   - [x] Update the weights for the whole FF++ dataset. (2022/4/28)
   - [x] Update AUC evaluation codes. (Both .py and .ipynb) (2022/5/2)
-  - [ ] Update the model trained with new version landmarks and normative datasets in these days.
+  - [x] Update the model trained with optimized structure and trained with new version datasets (2022/11/5, **LATEST**).
 - [ ] Gradually release the datasets
-  - [ ] FF++
+  - [x] FF++ (2022/11/5, **LATEST**)
     - [x] c23
-    - [ ] raw
-    - [ ] c40
+    - [x] raw
+    - [x] c40
 
 # Log
 

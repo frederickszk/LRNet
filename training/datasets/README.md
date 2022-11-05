@@ -2,7 +2,9 @@
 
 For placing the dataset files.
 
-
+> [2022/11/5] Update
+> - We now adopt the dataset-split according to the original [FF++](https://github.com/ondyari/FaceForensics/tree/master/dataset/splits): `train(720):val(140):test(140)`. During training we use `val` to determine the checkpoints, and the saved weights are evaluate by the `test` dataset, which avoids the identity leak.
+> - The current dataset uses a [**new normalization method**](https://github.com/frederickszk/LRNet/blob/d090c80c9e14b28c2e293c4ba5f3e1e2b79bf5de/demo/utils/landmark_utils.py#L321), which discards the previous landmark-alignment, so developers using the old dataset would need to **redownload** the dataset.
 
 # File structure
 
@@ -12,50 +14,43 @@ The structure of `Origin`, `DF`, `FS`, `F2F`, `NT` should be like (take `DF` as 
 
 ```css
 |-- DF
-    |-- c23
+    |-- raw
         |-- train
-            < 000_003.txt, ..., 799_809.txt >
+            < 001_870.txt, ..., 999_960.txt >
+        |-- val
+            < 004_982.txt, ..., 992_980.txt >
         |-- test
-            < 800_840.txt, ..., 999_960.txt >
+            < 000_003.txt, ..., 995_233.txt >
+    |-- c23
+        |-- ...
+    |-- c40
 ```
 
-Therefore, you can download the dataset (link listed below) and copy the `c23` folder into corresponding folder.
+Therefore, you can download the dataset (link listed below) and copy the `raw/c23/c40` folder into corresponding folder, or just overwrite the folders.
 
 For your own landmark dataset, you could organize them in similar structure and adjust the training codes accordingly. 
 
 
 
 # Download links
+> For FF++, we recommend using `raw`-level for training, as it has the best quality.
 
-## Google drive
-
-### FF++
-
-- Origin
-  - c23: https://drive.google.com/file/d/1zPwmMtMKY-IKfY0SbkW0rj5JUFnVZNVJ/view?usp=sharing
-- DF
-  - c23: https://drive.google.com/file/d/17elaDbpVpxN2CpB6vvsSM_HxMa3_MA0i/view?usp=sharing
-- F2F
-  - c23：https://drive.google.com/file/d/10vMpl8PMpMmc84CV0jznobGxyCLiYfzE/view?usp=sharing
-- FS
-  - c23：https://drive.google.com/file/d/1zlEGyR00NtcFN5c5-ODWqm6sggPwfq5D/view?usp=sharing
-- NT
-  - c23：https://drive.google.com/file/d/1wkjfoHsSBvnt2X_iAVXkJihomLzYP4ow/view?usp=sharing
-
-
-
-## Baidu net-disk
+## Google Drive
 
 ### FF++
 
-- Origin
-  - c23: https://pan.baidu.com/s/16542PFZKawIE-kI90bVg3g （提取码：7846）
-- DF
-  - c23: https://pan.baidu.com/s/1X6QfndLuS-YFeRiddJQyeA （提取码：qgk2）
-- F2F
-  - c23：https://pan.baidu.com/s/130ubhume--P-5gvqUJCbNg （提取码：hdp7）
-- FS
-  - c23：https://pan.baidu.com/s/1YqG73Wm8555wr57rzbDCpg （提取码：qwx8）
-- NT
-  - c23：https://pan.baidu.com/s/1KcbXtRI0zFdL90XnTdzTDg （提取码：7aka）
+- [raw](https://drive.google.com/file/d/1qem21kpakam32pJlxY5XRyOJ22A0UCPE/view?usp=share_link)
+- [c23](https://drive.google.com/file/d/1F1b9-CREmr_u5LGAKA0y-CdX17OoxTuA/view?usp=share_link)
+- [c40](https://drive.google.com/file/d/1VxWu7_32HX7v9t58qFuNOzQGTe1aSjuE/view?usp=share_link)
+
+
+
+
+## Baidu Net-disk
+
+### FF++
+
+- [raw](https://pan.baidu.com/s/1xrvxxTQGIna-w6H95kFA8Q?pwd=0z5u) (提取码：0z5u)
+- [c23](https://pan.baidu.com/s/1LEaIzFZj2jCuiAXZ8FOY8Q?pwd=wif6) (提取码：wif6)
+- [c40](https://pan.baidu.com/s/1ydAUuS29JrDxdNqIfFZzNw?pwd=en2q) (提取码：en2q)
 

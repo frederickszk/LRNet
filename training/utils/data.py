@@ -61,6 +61,11 @@ def get_data_for_test(path, fake, block):
     for file in tqdm(files):
         vectors = np.loadtxt(join(path, file))
 
+        """
+        [22/08/21] Add a judgement here, when the length of the vectors is smaller than the block, just discard it.]
+        """
+        if vectors.shape[0] < block:
+            continue
         for i in range(0, vectors.shape[0] - block, block):
             vec = vectors[i:i + block, :]
             x.append(vec)

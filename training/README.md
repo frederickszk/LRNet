@@ -14,17 +14,24 @@ Before start training the model, you should prepare the datasets in the folder: 
 
 For facilitating the training and evaluation of LRNet, we would release the processed **landmark datasets** gradually. Here is the list:
 
-- [ ] FF++ [[Github Link](https://github.com/ondyari/FaceForensics)]
-  - [ ] Deepfakes (DF)
+- [x] FF++ [[Github Link](https://github.com/ondyari/FaceForensics)]
+  - [x] Deepfakes (DF)
+    - [x] raw
     - [x] c23
-  - [ ] FaceSwap (FS)
+    - [x] c40
+  - [x] FaceSwap (FS)
+    - [x] raw
     - [x] c23
-  - [ ] Face2Face (F2F)
+    - [x] c40
+  - [x] Face2Face (F2F)
+    - [x] raw
     - [x] c23
-  - [ ] NeuralTexture (NT)
+    - [x] c40
+  - [x] NeuralTexture (NT)
+    - [x] raw
     - [x] c23
-
-> This example codes perform the training on single DF(c23) dataset. While recent works tend to mix the 4 datasets for training. We have updated this training strategy on [2022/3/10]. And we also provide preliminary weights (not fine-tuned yet, _PyTorch version only_) for the whole FF++ dataset. You can find it at `./weights/torch/g1_all.pth` and `./weights/torch/g2_all.pth`. It can achive *95.7%* accuracy.
+    - [x] c40
+> The performance reported in the paper (CVPR'21) was obtained by training on the single `DF` dataset. While recent works tend to mix the 4 datasets for training. We have updated this training strategy on [2022/3/10]. And we update the weights trained on `FF++(raw)` (_PyTorch version only_, [2022/11/5]). You can find it at `./weights/torch/g1.pth` and `./weights/torch/g2.pth`. It can achive *99.02%* AUC.
 
 
 
@@ -50,11 +57,14 @@ For facilitating the training and evaluation of LRNet, we would release the proc
 
 ### Notice
 
-- Related codes files: `train.py`, `evaluate.py`, `./utils/`
-- Before executing the codes, please ensure that you have prepared the datasets, and check the **initialization area (L69---L76)** in `train.py`.
-- We have provided the trained model weights for exhibition in folder `./weights/torch/`. Back-up them if needed before training or modify the codes **(L134, L142) in `train.py` and (L71, L76) in `evaluate.py`** to save and evaluate your own model weights. Otherwise if you directly start the training, the example weights will be overwritten.
-- The function `train()` (L11) will return logs containing the training logs message such as the training loss of each epochs. You may use it to visualize the training procedure.
-
+- Related codes files: `train.py`, `evaluate.py`, `./utils/`, `./configs/`
+- Before executing the codes, please ensure that you have prepared the datasets.
+- You could modify the `.yaml` files in the `./configs/` to customize the training and evaluating procedure.
+  - `args_train.yaml`: Used for `train.py`
+  - `args_test.yaml`: Used for `test.py`
+  - `args_model.yaml`: The model's hyper-parameters
+- We have provided the trained model weights in folder `./weights/torch/`. You can train and evaluate your own model by following the instructions above.
+- The function `train_loop()` will return logs containing the training logs message such as the training loss of each epochs. You may use it to visualize the training procedure.
 
 
 ### Usage
@@ -197,9 +207,22 @@ python model_tf.py -h
 
 
 
-
-
 # Other Infos
 
+## Performance
+> - Reported by AUC scores
+> - All the results are obtained by the weights `./weights/torch/`, which are trained on `FF++(raw)`
+
+### Sub-dataset
+|  DF   |  NT   |  F2F  |  FS   |
+| :---: | :---: | :---: | :---: |
+| 99.79 | 97.06 | 99.35 | 99.90 |
+
+### Different compression rate
+|  raw  |  c23  |  c40  |
+| :---: | :---: | :---: |
+| 99.02 | 99.22 | 88.57 |
+
+## Computational overhead
 - Read in the datasets will occupy < 2GB memories and during training the codes will consume ~3.5GB. When using GPU, the GPU memory occupation will be about 1GB. ([2022/3/10]: New memories occupation reports will be updated soon.)
-- When enabling GPU acceleration, training each model will complete in 3~4 mins. （According to your device）
+- When enabling GPU acceleration, training each model will complete in around 5 mins. （According to your device）

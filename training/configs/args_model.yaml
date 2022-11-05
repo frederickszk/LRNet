@@ -1,0 +1,7 @@
+feature_size: 136
+lm_dropout_rate: 0.1
+rnn_unit: 32
+num_layers: 1
+rnn_dropout_rate: 0
+fc_dropout_rate: 0.5
+res_hidden: 64

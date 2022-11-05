@@ -24,28 +24,55 @@ class LandmarkDropout(nn.Module):
             return x
 
 
-class LRNet(nn.Module):
-    def __init__(self, rnn_unit=64, dropout_rate=0.5):
-        super(LRNet, self).__init__()
+class Residual(nn.Module):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
 
-        self.dropout_landmark = LandmarkDropout(0.20)
-        self.gru = nn.GRU(input_size=136, hidden_size=rnn_unit, batch_first=True, bidirectional=True)
-        self.dropout_feature_1 = nn.Dropout(dropout_rate)
-        self.linear_1 = nn.Linear(128, 64)
-        self.relu = nn.ReLU()
-        self.dropout_feature_2 = nn.Dropout(dropout_rate)
-        self.linear_2 = nn.Linear(64, 2)
+    def forward(self, x, **kwargs):
+        return self.fn(x, **kwargs) + x
+
+
+class FeedForward(nn.Module):
+    def __init__(self, dim, hidden_dim, dropout=0.):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, dim),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class LRNet(nn.Module):
+    def __init__(self, feature_size=136, lm_dropout_rate=0.1, rnn_unit=32,
+                 num_layers=1, rnn_dropout_rate=0,
+                 fc_dropout_rate=0.5, res_hidden=64):
+        super(LRNet, self).__init__()
+        self.hidden_size = rnn_unit
+        self.hidden_state = nn.Parameter(torch.randn(2 * num_layers, 1, rnn_unit))
+        self.dropout_landmark = LandmarkDropout(lm_dropout_rate)
+        self.gru = nn.GRU(input_size=feature_size, hidden_size=rnn_unit,
+                          num_layers=num_layers, dropout=rnn_dropout_rate,
+                          batch_first=True, bidirectional=True)
+
+        self.dense = nn.Sequential(
+            nn.Dropout(fc_dropout_rate),
+            Residual(FeedForward(rnn_unit * 2 * num_layers, res_hidden, fc_dropout_rate)),
+            nn.Dropout(fc_dropout_rate),
+
+            # MLP-Head
+            nn.Linear(rnn_unit * 2 * num_layers, 2)
+        )
         self.output = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.dropout_landmark(x)
-        x = self.gru(x)[0]
-        x = x[:, -1, :]
-        x = self.dropout_feature_1(x)
-        x = self.linear_1(x)
-        x = self.relu(x)
-        x = self.dropout_feature_2(x)
-        x = self.linear_2(x)
+        _, hidden = self.gru(x, self.hidden_state.repeat(1, x.shape[0], 1))
+        x = torch.cat(list(hidden), dim=1)
+        x = self.dense(x)
         x = self.output(x)
-
         return x

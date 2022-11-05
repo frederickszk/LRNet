@@ -1,0 +1,8 @@
+BLOCK_SIZE: 30
+BATCH_SIZE: 1024
+
+add_dataset_root: './datasets'  # Modify this if you change the root address of the dataset.
+
+add_weights: './weights/torch'
+weights_name_g1: 'g1.pth'
+weights_name_g2: 'g2.pth'

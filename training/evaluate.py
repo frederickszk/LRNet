@@ -1,12 +1,12 @@
 import argparse
-from tqdm import tqdm, trange
-from torch import optim
 from os.path import join
 from utils.model import *
 from utils.logger import Logger
 from utils.metric import *
 from utils.dataset import Dataset
 from sklearn.metrics import roc_curve, auc
+from configs.loader import load_yaml
+
 
 def main(args):
     if_gpu = args.gpu
@@ -16,13 +16,14 @@ def main(args):
     """
     Initialization
     """
-    BLOCK_SIZE = 60
-    BATCH_SIZE = 1024
-    DROPOUT_RATE = 0.5
-    RNN_UNIT = 64
-    add_weights = './weights/torch/'
-    weights_name_g1 = 'g1_all.pth'
-    weights_name_g2 = 'g2_all.pth'
+    args_model = load_yaml("configs/args_model.yaml")
+    args_test = load_yaml("configs/args_test.yaml")
+    BLOCK_SIZE = args_test["BLOCK_SIZE"]
+    BATCH_SIZE = args_test["BATCH_SIZE"]
+
+    add_weights = args_test["add_weights"]
+    weights_name_g1 = args_test["weights_name_g1"]
+    weights_name_g2 = args_test["weights_name_g2"]
 
     if if_gpu:
         # Optional to uncomment if some bugs occur.
@@ -31,7 +32,8 @@ def main(args):
     else:
         device = 'cpu'
 
-    dataset = Dataset(name=dataset_name, level=dataset_level)
+    dataset = Dataset(add_root=args_test["add_dataset_root"],
+                      name=dataset_name, level=dataset_level)
 
     """
     Logs
@@ -39,8 +41,8 @@ def main(args):
     logger = Logger()
     logger.register_status(dataset=dataset,
                            device=device,
-                           add_weights=add_weights,
                            branch_selection=branch_selection)
+    logger.register_args(**args_test, **args_model)
     logger.print_logs_evaluating()
 
     """
@@ -69,12 +71,12 @@ def main(args):
     acc_g1 = None
     acc_g2 = None
     if branch_selection == 'g1' or branch_selection == 'all':
-        g1 = LRNet(RNN_UNIT, DROPOUT_RATE)
+        g1 = LRNet(**args_model)
         g1.load_state_dict(torch.load(join(add_weights, weights_name_g1)))
         acc_g1 = evaluate(g1, test_iter_A, device)
 
     if branch_selection == 'g2' or branch_selection == 'all':
-        g2 = LRNet(RNN_UNIT, DROPOUT_RATE)
+        g2 = LRNet(**args_model)
         g2.load_state_dict(torch.load(join(add_weights, weights_name_g2)))
         acc_g2 = evaluate(g2, test_iter_B, device)
 
@@ -159,7 +161,7 @@ if __name__ == "__main__":
                         )
     parser.add_argument('-l', '--level', type=str,
                         choices=['raw', 'c23', 'c40'],
-                        default='c23',
+                        default='raw',
                         help="Select the dataset compression level. "
                              "Valid selections: ['raw', 'c23', 'c40'] ")
     parser.add_argument('-b', '--branch', type=str,

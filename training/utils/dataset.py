@@ -6,10 +6,10 @@ from .data import get_data, get_data_for_test
 
 
 class Dataset:
-    def __init__(self, name, level):
+    def __init__(self, name, level, add_root='./datasets'):
+        self.add_root = add_root
         self.name = name
         self.level = level
-        self.add_root = './datasets'  # Modify this if you change the root address of the dataset.
         self.add_real = []
         self.add_fake = []
         self.if_inited = False
@@ -40,21 +40,37 @@ class Dataset:
 
         self.if_inited = True
 
-    def load_data_train_all(self, block_size, batch_size):
-        train_samples = None
-        train_samples_diff = None
-        train_labels = None
+    def load_data_training_all_interface(self, block_size, batch_size, split_name):
+        """
+        The general interface for load the data for training ('train' and 'val').
+        The differences between this function and the testing codes is:
+            this function ONLY handle the [sample-level] message, but not [video-level].
+
+        :param block_size: The number of the frames in a video sample. [Type: Int]
+        :param batch_size: The batch size [Type: Int]
+        :param split_name: 'train' or 'val' [Type: Str]
+        :return: Return 2 dataloader (iter_A and iter_B)
+        """
+        assert split_name in ['train', 'val']
+        samples = None
+        samples_diff = None
+        labels = None
 
         for add_r in self.add_real:
-            real_samples, real_samples_diff, real_labels = get_data(join(add_r, "train/"), 0, block_size)
-            if train_samples is None:
-                train_samples = real_samples
-                train_samples_diff = real_samples_diff
-                train_labels = real_labels
+            real_samples, real_samples_diff, real_labels = get_data(join(add_r, split_name), 0, block_size)
+            if samples is None:
+                samples = real_samples
+                samples_diff = real_samples_diff
+                labels = real_labels
+
+                if split_name == 'val':
+                    # For the 'FF_all' setting, the add_r = [Origin] x 4
+                    # The same as test dataset. DO NOT augment the real sample in val dataset.
+                    break
             else:
-                train_samples = np.concatenate((train_samples, real_samples), axis=0)
-                train_samples_diff = np.concatenate((train_samples_diff, real_samples_diff), axis=0)
-                train_labels = np.concatenate((train_labels, real_labels), axis=0)
+                samples = np.concatenate((samples, real_samples), axis=0)
+                samples_diff = np.concatenate((samples_diff, real_samples_diff), axis=0)
+                labels = np.concatenate((labels, real_labels), axis=0)
 
         # Flush the memory
         real_samples = None
@@ -62,10 +78,10 @@ class Dataset:
         real_labels = None
 
         for add_f in self.add_fake:
-            fake_samples, fake_samples_diff, fake_labels = get_data(join(add_f, "train/"), 1, block_size)
-            train_samples = np.concatenate((train_samples, fake_samples), axis=0)
-            train_samples_diff = np.concatenate((train_samples_diff, fake_samples_diff), axis=0)
-            train_labels = np.concatenate((train_labels, fake_labels), axis=0)
+            fake_samples, fake_samples_diff, fake_labels = get_data(join(add_f, split_name), 1, block_size)
+            samples = np.concatenate((samples, fake_samples), axis=0)
+            samples_diff = np.concatenate((samples_diff, fake_samples_diff), axis=0)
+            labels = np.concatenate((labels, fake_labels), axis=0)
 
         # Flush the memory
         fake_samples = None
@@ -73,86 +89,95 @@ class Dataset:
         fake_labels = None
 
         # Convert to PyTorch dataset
-        train_samples = torch.tensor(train_samples, dtype=torch.float32)
-        train_samples_diff = torch.tensor(train_samples_diff, dtype=torch.float32)
-        train_labels = torch.tensor(train_labels, dtype=torch.long)
+        samples = torch.tensor(samples, dtype=torch.float32)
+        samples_diff = torch.tensor(samples_diff, dtype=torch.float32)
+        labels = torch.tensor(labels, dtype=torch.long)
 
-        train_dataset_A = Data.TensorDataset(train_samples, train_labels)
-        train_dataset_B = Data.TensorDataset(train_samples_diff, train_labels)
-        train_iter_A = Data.DataLoader(train_dataset_A, batch_size, shuffle=True)
-        train_iter_B = Data.DataLoader(train_dataset_B, batch_size, shuffle=True)
+        dataset_A = Data.TensorDataset(samples, labels)
+        dataset_B = Data.TensorDataset(samples_diff, labels)
+        dataset_iter_A = Data.DataLoader(dataset_A, batch_size, shuffle=True)
+        dataset_iter_B = Data.DataLoader(dataset_B, batch_size, shuffle=True)
 
-        return train_iter_A, train_iter_B
+        return dataset_iter_A, dataset_iter_B
+
+    def load_data_training_interface(self, block_size, batch_size, split_name, branch_selection):
+        """
+        The general interface for load the data for training ('train' and 'val').
+        The differences between this function and the testing codes is:
+            this function ONLY handle the [sample-level] message, but not [video-level].
+
+        :param block_size: The number of the frames in a video sample. [Type: Int]
+        :param batch_size: The batch size [Type: Int]
+        :param split_name: 'train' or 'val' [Type: Str]
+        :param branch_selection: 'g1', 'g2' [Type: Str]
+        :return: Only return 1 dataloader (iter_A or iter_B)
+        """
+        assert split_name in ['train', 'val']
+        assert branch_selection in ['g1', 'g2']
+        samples = None
+        labels = None
+
+        for add_r in self.add_real:
+            if branch_selection == 'g1':
+                real_samples, _, real_labels = get_data(join(add_r, split_name), 0, block_size)
+            else:
+                # Only preserve the _diff part. But for the concision we only mark it as 'samples' here.
+                _, real_samples, real_labels = get_data(join(add_r, split_name), 0, block_size)
+
+            if samples is None:
+                samples = real_samples
+                labels = real_labels
+
+                if split_name == 'val':
+                    # For the 'FF_all' setting, the add_r = [Origin] x 4
+                    # The same as test dataset. DO NOT augment the real sample in val dataset.
+                    break
+            else:
+                samples = np.concatenate((samples, real_samples), axis=0)
+                labels = np.concatenate((labels, real_labels), axis=0)
+
+        # Flush the memory
+        real_samples = None
+        real_labels = None
+
+        for add_f in self.add_fake:
+            if branch_selection == 'g1':
+                fake_samples, _, fake_labels = get_data(join(add_f, split_name), 1, block_size)
+            else:
+                _, fake_samples, fake_labels = get_data(join(add_f, split_name), 1, block_size)
+            samples = np.concatenate((samples, fake_samples), axis=0)
+            labels = np.concatenate((labels, fake_labels), axis=0)
+
+        # Flush the memory
+        fake_samples = None
+        fake_labels = None
+
+        # Convert to PyTorch dataset
+        samples = torch.tensor(samples, dtype=torch.float32)
+        labels = torch.tensor(labels, dtype=torch.long)
+
+        dataset = Data.TensorDataset(samples, labels)
+        dataset_iter = Data.DataLoader(dataset, batch_size, shuffle=True, pin_memory=True)
+
+        return dataset_iter
+
+    def load_data_train_all(self, block_size, batch_size):
+        return self.load_data_training_all_interface(block_size, batch_size, 'train')
+
+    def load_data_val_all(self, block_size, batch_size):
+        return self.load_data_training_all_interface(block_size, batch_size, 'val')
 
     def load_data_train_g1(self, block_size, batch_size):
-        train_samples = None
-        train_labels = None
+        return self.load_data_training_interface(block_size, batch_size, 'train', 'g1')
 
-        for add_r in self.add_real:
-            real_samples, _, real_labels = get_data(join(add_r, "train/"), 0, block_size)
-            if train_samples is None:
-                train_samples = real_samples
-                train_labels = real_labels
-            else:
-                train_samples = np.concatenate((train_samples, real_samples), axis=0)
-                train_labels = np.concatenate((train_labels, real_labels), axis=0)
-
-        # Flush the memory
-        real_samples = None
-        real_labels = None
-
-        for add_f in self.add_fake:
-            fake_samples, _, fake_labels = get_data(join(add_f, "train/"), 1, block_size)
-            train_samples = np.concatenate((train_samples, fake_samples), axis=0)
-            train_labels = np.concatenate((train_labels, fake_labels), axis=0)
-
-        # Flush the memory
-        fake_samples = None
-        fake_labels = None
-
-        # Convert to PyTorch dataset
-        train_samples = torch.tensor(train_samples, dtype=torch.float32)
-        train_labels = torch.tensor(train_labels, dtype=torch.long)
-
-        train_dataset_A = Data.TensorDataset(train_samples, train_labels)
-        train_iter_A = Data.DataLoader(train_dataset_A, batch_size, shuffle=True)
-
-        return train_iter_A
+    def load_data_val_g1(self, block_size, batch_size):
+        return self.load_data_training_interface(block_size, batch_size, 'val', 'g1')
 
     def load_data_train_g2(self, block_size, batch_size):
-        train_samples_diff = None
-        train_labels = None
+        return self.load_data_training_interface(block_size, batch_size, 'train', 'g2')
 
-        for add_r in self.add_real:
-            _, real_samples_diff, real_labels = get_data(join(add_r, "train/"), 0, block_size)
-            if train_samples_diff is None:
-                train_samples_diff = real_samples_diff
-                train_labels = real_labels
-            else:
-                train_samples_diff = np.concatenate((train_samples_diff, real_samples_diff), axis=0)
-                train_labels = np.concatenate((train_labels, real_labels), axis=0)
-
-        # Flush the memory
-        real_samples_diff = None
-        real_labels = None
-
-        for add_f in self.add_fake:
-            _, fake_samples_diff, fake_labels = get_data(join(add_f, "train/"), 1, block_size)
-            train_samples_diff = np.concatenate((train_samples_diff, fake_samples_diff), axis=0)
-            train_labels = np.concatenate((train_labels, fake_labels), axis=0)
-
-        # Flush the memory
-        fake_samples_diff = None
-        fake_labels = None
-
-        # Convert to PyTorch dataset
-        train_samples_diff = torch.tensor(train_samples_diff, dtype=torch.float32)
-        train_labels = torch.tensor(train_labels, dtype=torch.long)
-
-        train_dataset_B = Data.TensorDataset(train_samples_diff, train_labels)
-        train_iter_B = Data.DataLoader(train_dataset_B, batch_size, shuffle=True)
-
-        return train_iter_B
+    def load_data_val_g2(self, block_size, batch_size):
+        return self.load_data_training_interface(block_size, batch_size, 'val', 'g2')
 
     def load_data_test_all(self, block_size, batch_size):
         test_samples = None
