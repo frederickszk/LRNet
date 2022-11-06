@@ -3,17 +3,6 @@ import numpy as np
 import csv
 from collections import OrderedDict
 
-FACIAL_LANDMARKS_68_IDXS = OrderedDict([
-    ("mouth", (48, 68)),
-    ("inner_mouth", (60, 68)),
-    ("right_eyebrow", (17, 22)),
-    ("left_eyebrow", (22, 27)),
-    ("right_eye", (36, 42)),
-    ("left_eye", (42, 48)),
-    ("nose", (27, 36)),
-    ("jaw", (0, 17))
-])
-
 
 def shape_to_face(shape, width, height, scale=1.2):
     """
@@ -50,59 +39,6 @@ def shape_to_face(shape, width, height, scale=1.2):
 
     face_new = [int(x1), int(y1), int(x2), int(y2)]
     return face_new, face_size
-
-
-def landmark_align(shape):
-    desiredLeftEye = (0.35, 0.25)
-    desiredFaceWidth = 2
-    desiredFaceHeight = 2
-    (lStart, lEnd) = FACIAL_LANDMARKS_68_IDXS["left_eye"]
-    (rStart, rEnd) = FACIAL_LANDMARKS_68_IDXS["right_eye"]
-
-    leftEyePts = shape[lStart:lEnd]
-    rightEyePts = shape[rStart:rEnd]
-
-    # compute the center of mass for each eye
-    leftEyeCenter = leftEyePts.mean(axis=0)  # .astype("int")
-    rightEyeCenter = rightEyePts.mean(axis=0)  # .astype("int")
-    # compute the angle between the eye centroids
-    dY = rightEyeCenter[1] - leftEyeCenter[1]
-    dX = rightEyeCenter[0] - leftEyeCenter[0]
-    angle = np.degrees(np.arctan2(dY, dX))  # - 180
-
-    # compute the desired right eye x-coordinate based on the
-    # desired x-coordinate of the left eye
-    desiredRightEyeX = 1.0 - desiredLeftEye[0]
-
-    # determine the scale of the new resulting image by taking
-    # the ratio of the distance between eyes in the *current*
-    # image to the ratio of distance between eyes in the
-    # *desired* image
-    dist = np.sqrt((dX ** 2) + (dY ** 2))
-    desiredDist = (desiredRightEyeX - desiredLeftEye[0])
-    desiredDist *= desiredFaceWidth
-    scale = desiredDist / dist
-
-    # compute center (x, y)-coordinates (i.e., the median point)
-    # between the two eyes in the input image
-    eyesCenter = ((leftEyeCenter[0] + rightEyeCenter[0]) // 2,
-                  (leftEyeCenter[1] + rightEyeCenter[1]) // 2)
-
-    # grab the rotation matrix for rotating and scaling the face
-    M = cv2.getRotationMatrix2D(eyesCenter, angle, scale)
-
-    # update the translation component of the matrix
-    tX = 0  # desiredFaceWidth * 0.5
-    tY = desiredFaceHeight * desiredLeftEye[1]
-    M[0, 2] += (tX - eyesCenter[0])
-    M[1, 2] += (tY - eyesCenter[1])
-
-    n, d = shape.shape
-    temp = np.zeros((n, d + 1), dtype="int")
-    temp[:, 0:2] = shape
-    temp[:, 2] = 1
-    aligned_landmarks = np.matmul(M, temp.T)
-    return aligned_landmarks.T  # .astype("int"))
 
 
 def check_and_merge(location, forward, feedback, P_predict, status_fw=None, status_fb=None):
@@ -234,19 +170,36 @@ def calibrate_landmark(frames, shape_sequence):
         merge_pt, check, P_predict = check_and_merge(locations_seg, forward_pts, feedback_pts, P_predict, status_fw,
                                                      status_fb)
         locations_track.append(merge_pt)
-
+    # -------------------------------------------#
     """
     Align and normalize the landmark for model training.
+    [2022/11/6](DEPRECATED) We now only normalize the landmark without alignment.
     """
-    calibrated_aligned_landmarks = []
+    # calibrated_aligned_landmarks = []
+    # for i in locations_track:
+    #     shape = landmark_align(i)
+    #
+    #     shape = shape.ravel()
+    #     shape = shape.tolist()
+    #     calibrated_aligned_landmarks.append(shape)
+    #
+    # return calibrated_aligned_landmarks
+    # -------------------------------------------#
+    """
+    Landmark Normalization
+        - Target: [-1, 1]
+        - Updated at 2022/11/6
+    """
+    calibrated_normalized_landmarks = []
     for i in locations_track:
-        shape = landmark_align(i)
-
+        normalized_base = face_size_normalized // 2
+        shape = i - [normalized_base, normalized_base]
+        shape = shape / normalized_base
         shape = shape.ravel()
         shape = shape.tolist()
-        calibrated_aligned_landmarks.append(shape)
+        calibrated_normalized_landmarks.append(shape)
 
-    return calibrated_aligned_landmarks
+    return calibrated_normalized_landmarks
 
 
 def calibrator(video_file, landmark_sequence):
@@ -254,7 +207,7 @@ def calibrator(video_file, landmark_sequence):
     :param video_file: "xxx.mp4" (str)
     :param landmark_sequence: A sequence contains the landmark positions in each frame.
                 shape: (frames_num, 68, 2)
-    :return: calibrated_aligned_landmarks. shape: (frames_num, 136)
+    :return: calibrated_normalized_landmarks. shape: (frames_num, 136)
     """
     vidcap = cv2.VideoCapture(video_file)
     frames = []
@@ -264,9 +217,9 @@ def calibrator(video_file, landmark_sequence):
             frames.append(image)
         else:
             break
-    calibrated_aligned_landmarks = calibrate_landmark(frames, landmark_sequence)
+    calibrated_normalized_landmarks = calibrate_landmark(frames, landmark_sequence)
     vidcap.release()
-    return np.array(calibrated_aligned_landmarks)
+    return np.array(calibrated_normalized_landmarks)
 
 
 """
@@ -292,6 +245,7 @@ def readin_csv(file):
                 landmarks.append((eval(record[5 + j]), eval(record[5 + 68 + j])))
             shape_sequence.append(landmarks)
     return shape_sequence
+
 
 """
 Example code
