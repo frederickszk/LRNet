@@ -178,7 +178,7 @@ If our work helps your research, welcome for the citation:
 	<ul>
         <li>
             <strong>Optimize the landmark extraction.</strong> 
-            <img src="https://www.z4a.net/images/2024/01/08/exhibit-new.gif" alt="exhibit-new.gif" border="0" />
+            <a href="https://sm.ms/image/j2SEHYvqspaZW3B" target="_blank"><img src="https://s2.loli.net/2024/01/08/j2SEHYvqspaZW3B.gif" alt="stable.gif"></a>
             <br> As shown above, when extracting the landmarks in a video (image sequence), we now use a <strong>FIXED</strong> face size for all the frame.
             It's calculated by averaging the face size in each frame.
             This can extract a more consistent landmark sequence.
