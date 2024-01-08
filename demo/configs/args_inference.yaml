@@ -1,0 +1,7 @@
+BLOCK_SIZE: 30
+
+landmark_path: './landmarks'  # Modify this if you change the root address of the dataset.
+
+add_weights: './model_weights'
+weights_name_g1: 'g1.pth'
+weights_name_g2: 'g2.pth'

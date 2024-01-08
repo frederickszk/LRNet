@@ -215,14 +215,14 @@ python model_tf.py -h
 
 ### Sub-dataset
 |  DF   |  NT   |  F2F  |  FS   |
-| :---: | :---: | :---: | :---: |
-| 99.79 | 97.06 | 99.35 | 99.90 |
+|:-----:|:-----:|:-----:|:-----:|
+| 99.81 | 97.26 | 99.18 | 99.82 |
 
 ### Different compression rate
 |  raw  |  c23  |  c40  |
-| :---: | :---: | :---: |
-| 99.02 | 99.22 | 88.57 |
+| :---: |:-----:|:-----:|
+| 99.02 | 98.70 | 88.47 |
 
 ## Computational overhead
-- Read in the datasets will occupy < 2GB memories and during training the codes will consume ~3.5GB. When using GPU, the GPU memory occupation will be about 1GB. ([2022/3/10]: New memories occupation reports will be updated soon.)
+- Read in the datasets will occupy < 2GB memories and during training the codes will consume ~3.5GB. When using GPU, the GPU memory occupation will be about 1GB.
 - When enabling GPU acceleration, training each model will complete in around 5 mins. （According to your device）

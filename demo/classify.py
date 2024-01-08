@@ -1,21 +1,9 @@
 import numpy as np
-import tensorflow.keras as K
 import os
 from tqdm import tqdm
-from tensorflow.keras import layers
-import tensorflow as tf
-
-block_size = 60
-DROPOUT_RATE = 0.5
-RNN_UNIT = 64
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-gpus = tf.config.list_physical_devices(device_type='GPU')
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(device=gpu, enable=True)
-device = "CPU" if len(gpus) == 0 else "GPU"
-print("Using device: {}".format(device))
+from os.path import join
+from utils.model import *
+from configs import load_yaml
 
 
 def get_data_for_test(path, fake, block):  # fake:manipulated=1 original=0
@@ -30,7 +18,7 @@ def get_data_for_test(path, fake, block):  # fake:manipulated=1 original=0
 
     print("Loading data and embedding...")
     for file in tqdm(files):
-        vectors = np.loadtxt(path + file)
+        vectors = np.loadtxt(join(path, file))
         video_y.append(fake)
 
         for i in range(0, vectors.shape[0] - block, block):
@@ -54,6 +42,15 @@ def get_data_for_test(path, fake, block):  # fake:manipulated=1 original=0
     return np.array(x), np.array(x_diff), np.array(y), np.array(video_y), np.array(sample_to_video), count_y
 
 
+def predict(model, sample, device):
+    model.to(device)
+    model.eval()
+    sample = torch.from_numpy(sample).float().to(device)
+    output = model(sample)
+    predictions = output.cpu().detach().numpy()
+    return predictions
+
+
 def merge_video_prediction(mix_prediction, s2v, vc):
     prediction_video = []
     pre_count = {}
@@ -71,50 +68,41 @@ def merge_video_prediction(mix_prediction, s2v, vc):
 
 
 def main():
-    landmark_path = "./landmarks/"
+
+    """
+    Initialization
+    """
+
+    # Optional to uncomment if some bugs occur.
+    # os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Using device: {}".format(device))
+
+    args_model = load_yaml("configs/args_model.yaml")
+    args_inference = load_yaml("configs/args_inference.yaml")
+
+    BLOCK_SIZE = args_inference["BLOCK_SIZE"]
+    landmark_path = args_inference["landmark_path"]
+
+    add_weights = args_inference["add_weights"]
+    weights_name_g1 = args_inference["weights_name_g1"]
+    weights_name_g2 = args_inference["weights_name_g2"]
+
     assert os.path.exists(landmark_path), "Landmark path does not exist. Please extract the landmarks firstly."
-    test_samples, test_samples_diff, _, _, test_sv, test_vc = get_data_for_test(landmark_path, 1, block_size)
+    test_samples, test_samples_diff, _, _, test_sv, test_vc = get_data_for_test(landmark_path, 1, BLOCK_SIZE)
 
-    model = K.Sequential([
-        layers.InputLayer(input_shape=(block_size, 136)),
-        layers.Dropout(0.25),
-        layers.Bidirectional(layers.GRU(RNN_UNIT)),
-        layers.Dropout(DROPOUT_RATE),
-        layers.Dense(64, activation='relu'),
-        layers.Dropout(DROPOUT_RATE),
-        layers.Dense(2, activation='softmax')
-    ])
-    model_diff = K.Sequential([
-        layers.InputLayer(input_shape=(block_size - 1, 136)),
-        layers.Dropout(0.25),
-        layers.Bidirectional(layers.GRU(RNN_UNIT)),
-        layers.Dropout(DROPOUT_RATE),
-        layers.Dense(64, activation='relu'),
-        layers.Dropout(DROPOUT_RATE),
-        layers.Dense(2, activation='softmax')
-    ])
-
-    lossFunction = K.losses.SparseCategoricalCrossentropy(from_logits=False)
-    optimizer = K.optimizers.Adam(learning_rate=0.001)
-    model.compile(optimizer=optimizer,
-                  loss=lossFunction,
-                  metrics=['accuracy'])
-    model_diff.compile(optimizer=optimizer,
-                  loss=lossFunction,
-                  metrics=['accuracy'])
+    g1 = LRNet(**args_model)
+    g2 = LRNet(**args_model)
 
     print("Loading models and predicting...")
 
-    #----Using Deeperforensics 1.0 Parameters----#
-    model.load_weights('./model_weights/deeper/g1.h5')
-    model_diff.load_weights('./model_weights/deeper/g2.h5')
+    g1.load_state_dict(torch.load(join(add_weights, weights_name_g1), map_location=device))
+    g2.load_state_dict(torch.load(join(add_weights, weights_name_g2), map_location=device))
 
-    #----Using FF++ Parameters----#
-    # model.load_weights('./model_weights/ff/g1.h5')
-    # model_diff.load_weights('./model_weights/ff/g2.h5')
+    prediction = predict(g1, test_samples, device)
+    prediction_diff = predict(g2, test_samples_diff, device)
 
-    prediction = model.predict(test_samples)
-    prediction_diff = model_diff.predict(test_samples_diff)
+    assert len(prediction) == len(prediction_diff)
     mix_predict = []
     for i in range(len(prediction)):
         mix = prediction[i][1] + prediction_diff[i][1]

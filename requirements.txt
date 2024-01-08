@@ -1,0 +1,8 @@
+torch
+numpy
+tqdm
+opencv-python
+scikit-learn
+matplotlib
+face-alignment
+pyyaml

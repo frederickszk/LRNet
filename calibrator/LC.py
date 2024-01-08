@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
 import csv
-from collections import OrderedDict
 
 
-def shape_to_face(shape, width, height, scale=1.2):
+def shape_to_face(shape, width, height, scale=1.2, assign_face_size=None, shift_threshold=2.0, center_prev=None):
     """
     Recalculate the face bounding box based on coarse landmark location(shape)
+        - [24-01-04] Add a threshold logic to avoid the center jittering. Keep the face bounding box more stable.;
     :param
     shape: landmark locations
     scale: the scale parameter of face, to enlarge the bounding box
@@ -21,9 +21,20 @@ def shape_to_face(shape, width, height, scale=1.2):
     x_center = (x_min + x_max) // 2
     y_center = (y_min + y_max) // 2
 
-    face_size = int(max(x_max - x_min, y_max - y_min) * scale)
+    if center_prev is not None:
+        center_curr = np.array([x_center, y_center])
+        distance = np.sqrt(np.sum((center_prev - center_curr) ** 2))
+        if distance < shift_threshold:
+            # Fix the center-point according to the previous frame
+            x_center = center_prev[0]
+            y_center = center_prev[1]
+
+    if assign_face_size is not None:
+        face_size = int(assign_face_size * scale)
+    else:
+        face_size = int(max(x_max - x_min, y_max - y_min) * scale)
     # Enforce it to be even
-    # Thus the real whole bounding box size will be a odd
+    # Thus the real whole bounding box size will be an odd
     # But after cropping the face size will become even and
     # keep same to the face_size parameter.
     face_size = face_size // 2 * 2
@@ -38,7 +49,15 @@ def shape_to_face(shape, width, height, scale=1.2):
     y2 = y1 + face_size
 
     face_new = [int(x1), int(y1), int(x2), int(y2)]
-    return face_new, face_size
+    return face_new, face_size, np.array([x_center, y_center])
+
+
+def calculate_face_size(shape):
+    x_min, y_min = np.min(shape, axis=0)
+    x_max, y_max = np.max(shape, axis=0)
+
+    face_size = max(x_max - x_min, y_max - y_min)
+    return face_size
 
 
 def check_and_merge(location, forward, feedback, P_predict, status_fw=None, status_fb=None):
@@ -111,10 +130,24 @@ def calibrate_landmark(frames, shape_sequence):
     locations = []
     shapes_para = []  # Use to recover the shape in whole frame. ([x1, y1, scale_shape])
 
+    # Stable logic here
+    face_size_ori_s = []
+    for shape in shape_sequence:
+        face_size_ori = calculate_face_size(shape)
+        face_size_ori_s.append(face_size_ori)
+    stable_face_size = int(np.rint(np.average(face_size_ori_s)))
+
+    center_prev = None
     for i in range(frames_num):
         frame = frames[i]
         shape = shape_sequence[i]
-        face, face_size = shape_to_face(shape, frame_width, frame_height, 1.2)
+        # face, face_size = shape_to_face(shape, frame_width, frame_height, 1.2)
+        face, face_size, center_curr = shape_to_face(shape, frame_width, frame_height, 1.2,
+                                                     assign_face_size=stable_face_size,
+                                                     shift_threshold=1.42,
+                                                     center_prev=center_prev)
+        center_prev = center_curr
+
         if face_size == 0:
             # Detection failed at this frame. Here we simply skip it.
             continue
@@ -170,21 +203,6 @@ def calibrate_landmark(frames, shape_sequence):
         merge_pt, check, P_predict = check_and_merge(locations_seg, forward_pts, feedback_pts, P_predict, status_fw,
                                                      status_fb)
         locations_track.append(merge_pt)
-    # -------------------------------------------#
-    """
-    Align and normalize the landmark for model training.
-    [2022/11/6](DEPRECATED) We now only normalize the landmark without alignment.
-    """
-    # calibrated_aligned_landmarks = []
-    # for i in locations_track:
-    #     shape = landmark_align(i)
-    #
-    #     shape = shape.ravel()
-    #     shape = shape.tolist()
-    #     calibrated_aligned_landmarks.append(shape)
-    #
-    # return calibrated_aligned_landmarks
-    # -------------------------------------------#
     """
     Landmark Normalization
         - Target: [-1, 1]

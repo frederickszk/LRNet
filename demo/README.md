@@ -1,29 +1,37 @@
 # LRNet-Demo
 The demo of *LRNet*. It reproduces the whole procedure from a input video sample to its corresponding predicted label. 
+> **[22-11-05]** Update the landmark extraction in `extract_landmark.py`.
+> - Add a log file that records the average prediction score of the landmarks in a video. It is useful to exclude some poor quality videos.
+> - Add a breakpoint mechanism that would be helpful in deployment environments. It would skip the videos that have landmarks result in the output path.
+> 
+> **[24-01-08]** Important Update.
+> - Update the model to PyTorch version. You could download the new weights.
+> - Optimize the stability of landmark extraction in `utils/landmark_utils.py`. You could check Log 2024/1/8 for more details (in `LRNet/README.md`)
 
 # Folders & Codes
+`./configs`
+
+The configuration files for LRNet model. 
 
 `./input`
 
-The input sample videos. Here we provide a real and a fake video.
+The input sample videos. Here we provide two sets of real and fake video.
+
+One is from the FF++ dataset (marked as `ff`), the other is from the Deeperforensics-1.0 (`dfo`).
 
 `./landmarks`
 
 The extracted landmarks. Each video is corresponding to a .txt file.
 
-> This folder contains the old version landmarks that only applicable to the old version model in `classify.py `. It would be replaced when the new version model is updated.
-
-`./landmarks_new`
-
-Temporary folder for new version facial landmarks.
 
 `./model_weights`
 
-The two-stream RNN's weight. We provide two sets of weights here, you can check Log 2021/5/18 for more details (in `LRNet/README.md`).
+The two-stream RNN's weight. We provide the weights trained on `dfo` because it has better generalization ability.
 
 `./visualize`
 
 The visualize results of landmrks extraction. The original landmarks detection (without calibration) is shown in "_origin.avi", and the calibrated one is shown in ".track.avi".
+To save the space, we only provide 1 example.
 
 `./utils/`
 
@@ -76,9 +84,9 @@ Perform the classification on extracted landmarks. Including reading and embeddi
 
 - numpy
 - tqdm
-- TensorFlow >2.0
-    - CPU version is sufficient
-
+- [Pytorch](https://pytorch.org/get-started/locally/)
+  - Verified on the latest version (Pytorch 2.1.2 with CUDA 12.1)
+  - CPU version is also supported
 
 
 # Useage
@@ -104,9 +112,6 @@ For detailed, please consult
 python extract_landmarks.py -h
 ```
 
-> 1. **(IMPORTANT)** There is a major change in the current version: We no longer align the landmarks but normalize them into [-1, 1], which shows better performance. Therefore they cannot be directly input into `classify.py` and we then put them in another folder. Currently, we still preserve the data and models of the old version, and we would update them in these days (also the new version datasets).
-> 2. We add a log file that records the average prediction score of the landmarks in a video. It is useful to exclude some poor quality videos.
-> 3. We add a breakpoint mechanism that would be helpful in deployment environments. It would skip the videos that have landmarks result in the output path.
 
 ## Classification
 
@@ -119,3 +124,5 @@ python classify.py
 ```
 
 and you can see the prediction results (predicted label and score of the corresponding sample. Noticed the score that "0=real" and "1=fake".
+
+Besides, you could modify the configs in `./configs/args_inference.yaml` to assign your onw model weights, input data, etc.

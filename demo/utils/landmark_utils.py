@@ -5,17 +5,20 @@ import face_alignment
 from os.path import join
 import demo.utils.shared as shared
 from datetime import datetime
+import torch
 # from .deprecated import track_bidirectional, landmark_align  # DEPRECATED codes, just for reference.
 
 
-def shape_to_face(shape, width, height, scale=1.2):
+def shape_to_face(shape, width, height, scale=1.2, assign_face_size=None, shift_threshold=2.0, center_prev=None):
     """
     Recalculate the face bounding box based on coarse landmark location(shape)
+        - [24-01-04] Add a threshold logic to avoid the center jittering. Keep the face bounding box more stable.;
     :param
     shape: landmark locations
     scale: the scale parameter of face, to enlarge the bounding box
     :return:
     face_new: new bounding box of face (1*4 list [x1, y1, x2, y2])
+    # face_center: the center coordinate of face (1*2 list [x_c, y_c])
     face_size: the face is rectangular( width = height = size)(int)
     """
     x_min, y_min = np.min(shape, axis=0)
@@ -24,7 +27,18 @@ def shape_to_face(shape, width, height, scale=1.2):
     x_center = (x_min + x_max) // 2
     y_center = (y_min + y_max) // 2
 
-    face_size = int(max(x_max - x_min, y_max - y_min) * scale)
+    if center_prev is not None:
+        center_curr = np.array([x_center, y_center])
+        distance = np.sqrt(np.sum((center_prev - center_curr) ** 2))
+        if distance < shift_threshold:
+            # Fix the center-point according to the previous frame
+            x_center = center_prev[0]
+            y_center = center_prev[1]
+
+    if assign_face_size is not None:
+        face_size = int(assign_face_size * scale)
+    else:
+        face_size = int(max(x_max - x_min, y_max - y_min) * scale)
     # Enforce it to be even
     # Thus the real whole bounding box size will be an odd
     # But after cropping the face size will become even and
@@ -41,7 +55,29 @@ def shape_to_face(shape, width, height, scale=1.2):
     y2 = y1 + face_size
 
     face_new = [int(x1), int(y1), int(x2), int(y2)]
-    return face_new, face_size
+    return face_new, face_size, np.array([x_center, y_center])
+
+
+def calculate_face_distance(shape_prev, shape_curr):
+    """
+    Calculate the distance between two faces
+    :param shape_prev: The shape of the previous frame
+    :param shape_curr: The shape of the current frame
+    :return: The distance between two faces
+    """
+    center_prev = np.mean(shape_prev, axis=0)
+    center_curr = np.mean(shape_curr, axis=0)
+    # Use L2-Norm to calculate the distance
+    distance = np.sqrt(np.sum((center_prev - center_curr)**2))
+    return distance
+
+
+def calculate_face_size(shape):
+    x_min, y_min = np.min(shape, axis=0)
+    x_max, y_max = np.max(shape, axis=0)
+
+    face_size = max(x_max - x_min, y_max - y_min)
+    return face_size
 
 
 def predict_single_frame(frame, fa, face_box=None):
@@ -155,16 +191,25 @@ def detect_frames_track(frames, video, fps):
 
     face_boxes = None
     lm_scores = []
+    face_size_ori_s = []  # [24-01-06] To record the face size of each frame to for the stabling logic.
+
+    """
+    [24-01-06] Check the GPU-support here.
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == 'cpu':
+        print("[WARNING]: Preprocessing codes running on CPU, which would be slow. For optimal performance, "
+              "consider use the pytorch-cuda instead")
 
     print("Face Bounding-Box Detecting:")
     if shared.face_detector_selection == 'blazeface':
-        fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, face_detector='blazeface')
+        fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, face_detector='blazeface', device=device)
     else:
         from demo.utils.FaceDetector.functions import get_detector, predict_face_box_batch
         net = get_detector()  # Initialize the retinaface detector.
         face_boxes, confidence_scores = predict_face_box_batch(net, frames)
         assert len(frames) == len(face_boxes)
-        fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, face_detector='folder')
+        fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.TWO_D, face_detector='folder', device=device)
 
     print("Landmark Detecting:")
     for i in tqdm(range(frames_num)):
@@ -178,7 +223,13 @@ def detect_frames_track(frames, video, fps):
 
         lm_scores.append(score)
 
-        if face_num == 0:
+        """
+        [24-01-06] New threshold logic to handle the situation where landmark detection failed:
+            - we found that when score is very small, the detector may also return a "null shape",
+            where all the position to be [0, 0], which would cause the exception.
+            - Therefore, we add a threshold here to alleviate it. We set the threshold to be 0.1
+        """
+        if face_num == 0 or score < 0.1:
             print("Landmark detection failed at index: {}".format(i))
             if len(shapes_origin) == 0:
                 skipped += 1
@@ -186,7 +237,38 @@ def detect_frames_track(frames, video, fps):
                 continue
             shape = shapes_origin[-1]
 
-        face, face_size = shape_to_face(shape, frame_width, frame_height, 1.2)
+        """
+        [24-01-06] Avoid the detected face changed to another
+            - When the face in current frame is too far from the former, just discard it and adopt the former position.
+            - Besides, when the size of the face change drastically, we also discard it.
+            - *Note*: This operation assume that there a only [1] manipulated face in the video, may be not suitable for
+            the situation that multiple faces are manipulated.
+        """
+
+        if len(shapes_origin) != 0:
+            face_distance = calculate_face_distance(shapes_origin[-1], shape)
+            face_size_ori_prev = calculate_face_size(shapes_origin[-1])
+            face_size_ori_curr = calculate_face_size(shape)
+
+            if face_distance > 0.5 * face_size_ori_prev or face_size_ori_curr < 0.7 * face_size_ori_prev or face_size_ori_curr > 1.3 * face_size_ori_prev:
+                # Use the former frame's results
+                shape = shapes_origin[-1]
+            face_size_ori_s.append(face_size_ori_prev)
+
+        shapes_origin.append(shape)
+
+    stable_face_size = int(np.rint(np.average(face_size_ori_s)))
+    assert skipped + len(shapes_origin) == frames_num
+
+    center_prev = None
+    for i, shape in enumerate(shapes_origin):
+
+        frame = frames[i + skipped]
+        face, face_size, center_curr = shape_to_face(shape, frame_width, frame_height, 1.2,
+                                                     assign_face_size=stable_face_size,
+                                                     shift_threshold=1.42,
+                                                     center_prev=center_prev)
+        center_prev = center_curr
         faceFrame = frame[face[1]: face[3],
                     face[0]:face[2]]
         if face_size < face_size_normalized:
@@ -198,7 +280,6 @@ def detect_frames_track(frames, video, fps):
         shape_norm = np.rint((shape - np.array([face[0], face[1]])) * scale_shape).astype(int)
         faces.append(face_norm)
         shapes_para.append([face[0], face[1], scale_shape])
-        shapes_origin.append(shape)
         locations.append(shape_norm)
 
     """

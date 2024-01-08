@@ -12,7 +12,8 @@ class LandmarkDropout(nn.Module):
 
     def generate_mask(self, landmark, frame):
         position_p = torch.bernoulli(torch.Tensor([1 - self.p]*(landmark//2)))
-        return position_p.repeat(1, frame, 2)
+        position_p = position_p.repeat_interleave(2)
+        return position_p.repeat(1, frame, 1)
 
     def forward(self, x: torch.Tensor):
         if self.training:
@@ -22,7 +23,6 @@ class LandmarkDropout(nn.Module):
             return x*landmark_mask.to(x.device)*scale
         else:
             return x
-
 
 class Residual(nn.Module):
     def __init__(self, fn):

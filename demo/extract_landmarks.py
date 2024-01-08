@@ -2,8 +2,13 @@ import argparse
 import os
 import numpy as np
 import cv2
-import demo.utils.shared as shared
+import pathlib
+import sys
 from os.path import join
+# Avoid errors when directly run this script from './demo'
+project_root = pathlib.Path(__file__).parent.parent.as_posix()
+sys.path.extend([project_root])
+import demo.utils.shared as shared
 from utils.landmark_utils import detect_frames_track
 
 
@@ -78,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input_path', type=str, default='./input/',
                         help="Input videos path (folder)"
                         )
-    parser.add_argument('-o', '--output_path', type=str, default='./landmarks_new/',
+    parser.add_argument('-o', '--output_path', type=str, default='./landmarks/',
                         help="Output landmarks(.txt) path (folder)"
                         )
     parser.add_argument('-v', '--visualize', action='store_true',
