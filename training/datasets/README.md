@@ -7,7 +7,7 @@ For placing the dataset files.
 > - The current dataset uses a [**new normalization method**](https://github.com/frederickszk/LRNet/blob/d090c80c9e14b28c2e293c4ba5f3e1e2b79bf5de/demo/utils/landmark_utils.py#L321), which discards the previous landmark-alignment, so developers using the old dataset would need to **redownload** the dataset.
 > 
 > [24-01-07] "Stable" dataset
-> - We update the dataset where the landmarks become more 'stable', leading to a better performance. The details would be updated soon.
+> - We update the dataset where the landmarks become more 'stable', leading to a better performance. You could check Log 2024/1/8 for more details (in `LRNet/README.md`). And the updated codes are in [demo](https://github.com/frederickszk/LRNet/blob/553f1891ceee740bb65441e28ec9ed434c66609a/demo/utils/landmark_utils.py#L260) and [API](https://github.com/frederickszk/LRNet/blob/553f1891ceee740bb65441e28ec9ed434c66609a/calibrator/LC.py#L138)
 > - For convenience, we do not split the dataset into 3 compression levels. Instead, we provide the download link for the whole dataset.
 
 # File structure
