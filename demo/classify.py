@@ -96,8 +96,8 @@ def main():
 
     print("Loading models and predicting...")
 
-    g1.load_state_dict(torch.load(join(add_weights, weights_name_g1), map_location=device))
-    g2.load_state_dict(torch.load(join(add_weights, weights_name_g2), map_location=device))
+    g1.load_state_dict(torch.load(join(add_weights, weights_name_g1), map_location=device, weights_only=True))
+    g2.load_state_dict(torch.load(join(add_weights, weights_name_g2), map_location=device, weights_only=True))
 
     prediction = predict(g1, test_samples, device)
     prediction_diff = predict(g2, test_samples_diff, device)
